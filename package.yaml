@@ -20,6 +20,8 @@ dependencies:
 - transformers
 - semiring-simple
 - random 
+- containers
+- template-haskell
 
 library:
   source-dirs: src

@@ -1,6 +1,8 @@
--- This file has been generated from package.yaml by hpack version 0.17.1.
+-- This file has been generated from package.yaml by hpack version 0.20.0.
 --
 -- see: https://github.com/sol/hpack
+--
+-- hash: 49b5d63ac93b9e78043d7a51cf70276d51ff4494ef18984ac8455a82fb915eae
 
 name:           prob-tools
 version:        0.1.0.0
@@ -15,19 +17,21 @@ library
   hs-source-dirs:
       src
   build-depends:
-      base >= 4.7 && < 5
-    , transformers
-    , semiring-simple
+      base >=4.7 && <5
+    , containers
     , random
+    , semiring-simple
+    , template-haskell
+    , transformers
   exposed-modules:
       Lexica
-      LexicalUncertainty
-      LF
-      ModelTheory
+      LUM
+      Model
       Prob
-      RSA
-      Scalar
+      TH
       Utils
+  other-modules:
+      Paths_prob_tools
   default-language: Haskell2010
 
 executable prob-tools-exe
@@ -36,9 +40,13 @@ executable prob-tools-exe
       app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >= 4.7 && < 5
-    , transformers
-    , semiring-simple
-    , random
+      base >=4.7 && <5
+    , containers
     , prob-tools
+    , random
+    , semiring-simple
+    , template-haskell
+    , transformers
+  other-modules:
+      Paths_prob_tools
   default-language: Haskell2010

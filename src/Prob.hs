@@ -119,3 +119,12 @@ test1 = runMassT (bayes statusCondPos)
 test2 :: IO [Double]
 test2 = fmap (\ns -> [fromIntegral n / fromIntegral (sum ns) | n <- ns]) nsIO
   where nsIO = bayesMC 10000 statusCondPos
+
+
+-- helper function for displaying distributions
+prettyDist :: Show b => String -> BDDist b -> String
+prettyDist o mx = dropR 2 probs
+  where probs           = "P(.|" ++ o ++ "): " ++ concatMap go (runMassT (runMaybeT mx))
+        go              = \(Mass n (Just x)) -> show x ++ " = " ++ prettyN n ++ ", "
+        prettyN (Sum n) = show (fromInteger (round (n * 100)) / 10.0^^2)
+        dropR n xs      = fst (splitAt (length xs - n) xs)
