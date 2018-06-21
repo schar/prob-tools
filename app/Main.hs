@@ -5,16 +5,24 @@ module Main where
 import Lexica
 import LUM
 import Prob
-import Model (saUniv, saDom)
-import TH    (mkSALexes)
+import Model (saUniv, saDom, gqUniv, gqDom)
+import TH    (mkLexes, mkSALexes, mkGQLexes)
+import Language.Haskell.TH
 
+-- $(fmap (:[]) $ valD (varP (mkName "gqInventory")) (mkLexes "GQ" >>= \ds -> normalB $ litE $ IntegerL $ toInteger $ length ds) [])
+-- valD (varP (mkName "gqLexes")) (normalB $ listE $ fmap snd ldecs) []
+
+main :: IO ()
+main = return ()
+
+{--
 
 -- stage the types and priors for LUM over SA alternatives
 ------------------------------------------------------------------------------
 
--- define the SA lexica that compete with Base
-$(mkSALexes)
--- from TH: saLexes = [\m -> eval (open m :: l S) | l <- refineBase ...]
+-- define the GQ lexica that compete with Base
+$(mkGQLexes)
+-- from TH: gqLexes = [\m -> eval (open m :: l S) | l <- refineBase ...]
 
 -- define the RSA parameters for reasoning about joint distributions over
 -- worlds, messages, and SA lexica
@@ -86,6 +94,69 @@ main = do
   P(.|John aced): wA = 1.0
   P(.|Silence): wA = 0.0, wS = 0.25, wN = 0.75
   --}
+
+--}
+
+{--
+
+-- stage the types and priors for LUM over GQ alternatives
+------------------------------------------------------------------------------
+
+-- define the GQ lexica that compete with Base
+$(mkGQLexes)
+-- from TH: gqLexes = [\m -> eval (open m :: l S) | l <- refineBase ...]
+
+-- define the RSA parameters for reasoning about joint distributions over
+-- worlds, messages, and SA lexica
+gqParams :: Dist m => Params m
+gqParams = PM
+  { worldPrior   = uniform gqUniv
+  , messagePrior = uniform gqMessages
+  , lexiconPrior = uniform gqLexes
+  , cost         = \x -> if x == Message nil then 5 else 0
+  , temp         = 1
+  }
+
+-- specify the alternative utterances
+gqMessages :: [Message]
+gqMessages = [Message (some player (\x -> s x scored)), Message (every player (\x -> s x scored)), Message nil]
+
+-- evaluate distributions at various levels of LUM iteration
+------------------------------------------------------------------------------
+
+-- literal listener with baseLex
+-- print the distribution over worlds for each possible message
+dispL0 = sequence_ (map putStrLn test)
+  where test = [prettyDist (show m ++ ", baseLex") (l0 m baseLex gqParams) | m <- gqMessages]
+
+-- literal speaker with baseLex and gqMessage alternatives
+-- print the distribution over messages for each possible world
+dispS0 = sequence_ (map putStrLn test)
+  where test = [prettyDist (show w ++ ", baseLex") (s0 w baseLex gqParams) | w <- gqUniv]
+
+-- pragmatic listener with gqLexes and gqMessages as alternatives
+-- print the distribution over worlds (summing over lexica) for each possible message
+dispL1 = sequence_ (map putStrLn test)
+  where test = [prettyDist (show m) (l1 m gqParams) | m <- gqMessages]
+
+main :: IO ()
+main = do
+  putStrLn ""
+  putStrLn "L0"
+  putStrLn "----------"
+  dispL0
+
+  putStrLn ""
+  putStrLn "S0"
+  putStrLn "----------"
+  dispS0
+
+  putStrLn ""
+  putStrLn "L1"
+  putStrLn "----------"
+  dispL1
+
+--}
 
 
 {--

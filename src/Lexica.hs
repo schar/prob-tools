@@ -6,7 +6,7 @@ module Lexica where
 import Model
 import Data.Tree
 import Data.Functor.Classes (compare1)
-import Data.List            (intercalate)
+import Data.List            (intercalate, nub, intersect)
 
 -- categories for the object language algebra
 data NP
@@ -35,10 +35,14 @@ class (NameLex f) => SALex f where
   aced   :: f VP
   scored :: f VP
 
+class (SALex f) => GQLex f where
+  someShot  :: (f NP -> f S) -> f S
+  everyShot :: (f NP -> f S) -> f S
+
 -- a message is an unevaluated obj language term of category S
 ------------------------------------------------------------------------------
 newtype Message = Message
-  { open :: forall f. (Grammar f, Eval f, NameLex f, SALex f) => f S }
+  { open :: forall f. (Grammar f, Eval f, NameLex f, SALex f, GQLex f) => f S }
 instance Eq Message where
   (Message m) == (Message m') = (m :: ParseTree S) == (m' :: ParseTree S)
 instance Ord Message where
@@ -75,21 +79,23 @@ instance SALex ParseTree where
   aced              = PT $ pure "aced"
   scored            = PT $ pure "scored"
 
-
+instance GQLex ParseTree where
+  someShot  q    = q (PT $ Node "" [pure "some shot" ])
+  everyShot q    = q (PT $ Node "" [pure "every shot"])
 
 -- second lexicon: Base carries terms to familiar e/s/t denotations
 ------------------------------------------------------------------------------
 type family TypeOf a where
   TypeOf S  = Prop
   TypeOf NP = Entity
-  TypeOf VP = Entity -> Prop
-  TypeOf TV = Entity -> Entity -> Prop
+  TypeOf VP = World -> [Entity]
+  TypeOf TV = World -> [(Entity,Entity)]
 
 data Base a = B {runBase :: (TypeOf a)}
 
 instance Grammar Base where
-  s (B x) (B f)     = B $ f x
-  tvp (B f) (B x)   = B $ f x
+  s (B x) (B f)     = B $ \w -> x `elem` f w
+  tvp (B f) (B x)   = B $ \w -> [y | (x,y) <- f w]
   nil               = B $ const True
 
 instance Eval Base where
@@ -100,8 +106,12 @@ instance NameLex Base where
   mary              = B $ Mary
 
 instance SALex Base where
-  scored            = B $ \x w -> any (\y -> (x,y) `elem` hit' w) (shot' w)
-  aced              = B $ \x w -> all (\y -> (x,y) `elem` hit' w) (shot' w)
+  scored            = B $ \w -> nub [x | y <- shot' w, (x,y) <- hit' w]
+  aced              = B $ \w -> nub [x | (x,_) <- hit' w, shot' w == shot' w `intersect` [y | (z,y) <- hit' w, z==x]]
+
+instance GQLex Base where
+  someShot  q   = B $ \w -> any (\y -> eval (q (B y)) w) (shot' w)
+  everyShot q   = B $ \w -> all (\y -> eval (q (B y)) w) (shot' w)
 
 {--
 
