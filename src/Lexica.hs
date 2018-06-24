@@ -1,143 +1,41 @@
-{-# LANGUAGE Rank2Types #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE DeriveLift #-}
 
 module Lexica where
 
-import Model
-import Data.Tree
-import Data.Functor.Classes (compare1)
-import Data.List            (intercalate, nub, intersect)
+import Language.Haskell.TH
+import Language.Haskell.TH.Syntax
+import Vocab
+-- import Lexica.ParseTree
+-- import Lexica.SA as SA (mkSALexes)
+-- import Lexica.GQ as GQ (mkGQLexes)
+-- -- import LUM
+-- import Lexica
+-- import Model
+-- import Control.Monad (MonadPlus, forM, filterM)
+-- import Data.List (subsequences, (\\))
 
--- categories for the object language algebra
-data NP
-data VP
-data S
-data TV
 
-type Prop = World -> Bool
-
-
--- Lex classes define terms for different kinds of obj language expressions
+-- convenience type differentiating and labeling lexica
 ------------------------------------------------------------------------------
-class Grammar f where
-  s      :: f NP -> f VP -> f S
-  tvp    :: f TV -> f NP -> f VP
-  nil    :: f S
+data Lexicon m = Lexicon
+  { lexName :: String, interpret :: m -> Prop }
+instance Eq (Lexicon m) where
+  (Lexicon name _) == (Lexicon name' _) = name == name'
+instance Ord (Lexicon m) where
+  compare (Lexicon name _) (Lexicon name' _) = compare name name'
+instance Show (Lexicon m) where
+  show (Lexicon name _) = name
 
-class Eval f where
-  eval   :: f S -> Prop
+-- declare a lexicon type called `name`
+genData :: Name -> Q Dec
+genData name = dataD (cxt []) name    vars Nothing   fields             derives
+            -- data           LexName a            = LexName (TypeOf a)
+  where a       = mkName "a"
+        vars    = [PlainTV a]
+        b       = bang noSourceUnpackedness noSourceStrictness
+        fields  = [normalC name [bangType b [t| TypeOf $(varT a) |]]]
+        derives = []
 
-class NameLex f where
-  john   :: f NP
-  mary   :: f NP
-
-class (NameLex f) => SALex f where
-  aced   :: f VP
-  scored :: f VP
-
-class (SALex f) => GQLex f where
-  someShot  :: (f NP -> f S) -> f S
-  everyShot :: (f NP -> f S) -> f S
-
--- a message is an unevaluated obj language term of category S
-------------------------------------------------------------------------------
-newtype Message = Message
-  { open :: forall f. (Grammar f, Eval f, NameLex f, SALex f, GQLex f) => f S }
-instance Eq Message where
-  (Message m) == (Message m') = (m :: ParseTree S) == (m' :: ParseTree S)
-instance Ord Message where
-  compare (Message m) (Message m') = compare (m :: ParseTree S) (m' :: ParseTree S)
-instance Show Message where
-  show m = show (open m :: ParseTree S)
-
-
--- a lexicon is an algebra that evaluates object language terms
-------------------------------------------------------------------------------
-
--- first lexicon: ParseTree carries terms to trees of strings
-------------------------------------------------------------------------------
-instance (Ord a) => Ord (Tree a) where
-  compare = compare1
-data ParseTree a = Nil | PT (Tree String) deriving (Eq, Ord)
-instance Show (ParseTree a) where
-  show (PT tree) = foldTree (\x cs -> if null cs then x else intercalate " " cs) tree
-  show Nil       = "Silence"
-
-instance Grammar ParseTree where
-  s (PT x) (PT f)   = PT $ Node "" [x,f]
-  tvp (PT f) (PT x) = PT $ Node "" [f,x]
-  nil               = Nil
-
-instance Eval ParseTree where
-  eval _ _          = True
-
-instance NameLex ParseTree where
-  john              = PT $ pure "John"
-  mary              = PT $ pure "Mary"
-
-instance SALex ParseTree where
-  aced              = PT $ pure "aced"
-  scored            = PT $ pure "scored"
-
-instance GQLex ParseTree where
-  someShot  q    = q (PT $ Node "" [pure "some shot" ])
-  everyShot q    = q (PT $ Node "" [pure "every shot"])
-
--- second lexicon: Base carries terms to familiar e/s/t denotations
-------------------------------------------------------------------------------
-type family TypeOf a where
-  TypeOf S  = Prop
-  TypeOf NP = Entity
-  TypeOf VP = World -> [Entity]
-  TypeOf TV = World -> [(Entity,Entity)]
-
-data Base a = B {runBase :: (TypeOf a)}
-
-instance Grammar Base where
-  s (B x) (B f)     = B $ \w -> x `elem` f w
-  tvp (B f) (B x)   = B $ \w -> [y | (x,y) <- f w]
-  nil               = B $ const True
-
-instance Eval Base where
-  eval              = runBase
-
-instance NameLex Base where
-  john              = B $ John
-  mary              = B $ Mary
-
-instance SALex Base where
-  scored            = B $ \w -> nub [x | y <- shot' w, (x,y) <- hit' w]
-  aced              = B $ \w -> nub [x | (x,_) <- hit' w, shot' w == shot' w `intersect` [y | (z,y) <- hit' w, z==x]]
-
-instance GQLex Base where
-  someShot  q   = B $ \w -> any (\y -> eval (q (B y)) w) (shot' w)
-  everyShot q   = B $ \w -> all (\y -> eval (q (B y)) w) (shot' w)
-
-{--
-
-data Refined m a = Ref {runRefined :: (m (Base a))}
-
-instance (Applicative m) => NameLex (Refined m) where
-  john                = Ref $ pure john
-  mary                = Ref $ pure mary
-
-instance (Applicative m) => Grammar (Refined m) where
-  s (Ref x) (Ref f)   = Ref (s <$> x <*> f)
-  tvp (Ref f) (Ref x) = Ref (tvp <$> f <*> x)
-
-refineET :: (Foldable m, MonadPlus m) =>
-            (Entity -> Prop) -> m Entity -> m World -> m (Entity -> Prop)
-refineET q dom univ =
-  let m = do x <- dom
-             w <- univ
-             guard $ q x w
-             return (x,w)
-      -- ms = foldr (\ x -> liftA2 (\ flg -> if flg then (x:) else id) [True,False]) (pure []) m
-      ms = (\\ [[]]) $ filterM (const [True,False]) (toList m)
-  in  msum $ fmap (\m' -> pure $ \x w -> (x,w) `elem` m') ms
-
-instance (Applicative m, Foldable m, MonadPlus m) => SALex (Refined m) where
-  scored = Ref $ fmap B $ refineET (runBase scored) empty empty
-  aced = Ref $ pure aced
-
---}

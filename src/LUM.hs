@@ -6,39 +6,31 @@ import Control.Monad.Trans.Maybe (MaybeT (MaybeT, runMaybeT))
 import Data.Function             (on)
 import Data.List                 (partition)
 import Lexica
+import Vocab
 import Model
 import Prob
 import Utils
 
-
-
--- convenience type differentiating and labeling lexica
-------------------------------------------------------------------------------
-data Lexicon = Lexicon
-  { lexName :: String, interpret :: Message -> Prop }
-instance Eq Lexicon where
-  (Lexicon name _) == (Lexicon name' _) = name == name'
-instance Ord Lexicon where
-  compare (Lexicon name _) (Lexicon name' _) = compare name name'
-instance Show Lexicon where
-  show (Lexicon name _) = name
-
-baseLex :: Lexicon
-baseLex = Lexicon "Base" (\m -> runBase (open m))
+-- instance Message m => Eq m where
+--   m == m' = (open m :: ParseTree S) == (m' :: ParseTree S)
+-- instance Message m => Ord m where
+--   compare m m' = compare (open m :: ParseTree S) (open m' :: ParseTree S)
+-- instance Message m => Show m where
+--   show m = show (open m :: ParseTree S)
 
 
 -- RSA model parameters
-data Params m = PM
-  { worldPrior   :: m World -- distribution over worlds
-  , messagePrior :: m Message -- distribution over messages
-  , lexiconPrior :: m Lexicon -- distribution over [[ ]] functions
-  , cost         :: Message -> Sum Float -- message costs
+data Params d m = PM
+  { worldPrior   :: d World -- distribution over worlds
+  , messagePrior :: d m -- distribution over messages
+  , lexiconPrior :: d (Lexicon m) -- distribution over [[ ]] functions
+  , cost         :: m -> Sum Float -- message costs
   , temp         :: Sum Float -- don't really know what this does
   }
 
 
 -- Helper functions for scaling probabilities
-scale :: Message -> Params m -> BDDist a -> BDDist a
+scale :: m -> Params d m -> BDDist a -> BDDist a
 scale m model = modify (exp . (temp model *) . subtract (cost model m) . log)
 
 modify :: (Prob -> Prob) -> BDDist a -> BDDist a
@@ -63,7 +55,7 @@ groupEqBy f (a:rest) = (a:as) : groupEqBy f bs
 -- given a message `m` and lexicon `lex`, return a distribution over worlds `w`
 -- that could be described by `m` when interpreted by `lex`, weighted by world
 -- prior
-l0 :: Message -> Lexicon -> Params BDDist -> BDDist World
+l0 :: m -> Lexicon m -> Params BDDist m -> BDDist World
 l0 m lex model = bayes $ do
   w <- worldPrior model
   guard (interpret lex m w)
@@ -74,7 +66,7 @@ l0 m lex model = bayes $ do
 -- given a world `w` and lexicon `lex`, return a distribution over messages `m`
 -- that are true of `w` when interpreted by `lex`, weighted by message prior and
 -- cost
-s0 :: World -> Lexicon -> Params BDDist -> BDDist Message
+s0 :: World -> Lexicon m -> Params BDDist m -> BDDist m
 s0 w lex model = bayes $ do
   m <- messagePrior model
   w' <- scale m model (l0 m lex model)
@@ -86,7 +78,7 @@ s0 w lex model = bayes $ do
 -- given a message `m`, return a distribution over worlds `w` compatible with
 -- `m` under /some/ lexicon, weighted by world prior, lexicon prior,
 -- and likelihood of s0 to describe `w` with `m`
-l1 :: Message -> Params BDDist -> BDDist World
+l1 :: (Eq m) => m -> Params BDDist m -> BDDist World
 l1 m model = weightedEq . runMassT . bayes $ do
   w <- worldPrior model
   sem <- (lexiconPrior model)

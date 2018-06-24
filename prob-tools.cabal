@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 49b5d63ac93b9e78043d7a51cf70276d51ff4494ef18984ac8455a82fb915eae
+-- hash: 3d37a73ba3d5ff47ecdc3bbb945cf0ef6282ee335a5642cc904978f32971bd5d
 
 name:           prob-tools
 version:        0.1.0.0
@@ -25,11 +25,16 @@ library
     , transformers
   exposed-modules:
       Lexica
+      Lexica.Base
+      Lexica.GQ
+      Lexica.ParseTree
+      Lexica.Refinements
+      Lexica.SA
       LUM
       Model
       Prob
-      TH
       Utils
+      Vocab
   other-modules:
       Paths_prob_tools
   default-language: Haskell2010
