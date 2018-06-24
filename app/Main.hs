@@ -6,7 +6,7 @@ import Lexica.Neo
 import Lexica.Base
 import LUM
 import Prob
-import Model (saUniv, saDom, gqUniv, gqDom)
+import Model (saUniv, saDom, gqUniv, gqDom, World)
 import Lexica
 import Vocab
 import Language.Haskell.TH
@@ -19,58 +19,30 @@ import Language.Haskell.TH
 
 -- define the GQ lexica that compete with Base
 $(mkSALexes)
--- from TH: gqLexes = [\m -> eval (open m :: l S) | l <- refineBase ...]
+-- from Lexica.SA: saLexes = [\m -> eval (m :: l S) | l <- refineBase ...]
+
+baselex = baseSALex
+universe = saUniv
+
+-- specify the alternative utterances
+messages :: [SAMessage]
+messages =
+  [ SAMessage (s john scored)
+  , SAMessage (s john aced)
+  , SAMessage nil
+  ]
 
 -- define the RSA parameters for reasoning about joint distributions over
 -- worlds, messages, and SA lexica
-saParams :: Dist d => Params d SAMessage
-saParams = PM
-  { worldPrior   = uniform saUniv
-  , messagePrior = uniform saMessages
+params :: Dist d => Params d SAMessage
+params = PM
+  { worldPrior   = uniform universe
+  , messagePrior = uniform messages
   , lexiconPrior = uniform saLexes
   , cost         = \x -> if x == SAMessage nil then 5 else 0
   , temp         = 1
   }
 
--- specify the alternative utterances
-saMessages :: [SAMessage]
-saMessages = [SAMessage (s john scored), SAMessage (s john aced), SAMessage nil]
-
-
--- evaluate distributions at various levels of LUM iteration
-------------------------------------------------------------------------------
-
--- literal listener with baseLex
--- print the distribution over worlds for each possible message
-dispL0 = sequence_ (map putStrLn test)
-  where test = [prettyDist (show m ++ ", baseLex") (l0 m baseSALex saParams) | m <- saMessages]
-
--- literal speaker with baseLex and saMessage alternatives
--- print the distribution over messages for each possible world
-dispS0 = sequence_ (map putStrLn test)
-  where test = [prettyDist (show w ++ ", baseLex") (s0 w baseSALex saParams) | w <- saUniv]
-
--- pragmatic listener with saLexes and saMessages as alternatives
--- print the distribution over worlds (summing over lexica) for each possible message
-dispL1 = sequence_ (map putStrLn test)
-  where test = [prettyDist (show m) (l1 m saParams) | m <- saMessages]
-
-main :: IO ()
-main = do
-  putStrLn ""
-  putStrLn "L0"
-  putStrLn "----------"
-  dispL0
-
-  putStrLn ""
-  putStrLn "S0"
-  putStrLn "----------"
-  dispS0
-
-  putStrLn ""
-  putStrLn "L1"
-  putStrLn "----------"
-  dispL1
 
 -- > L0
 -- > ----------
@@ -99,22 +71,14 @@ main = do
 
 -- define the Neo lexica that compete with Base
 $(mkNeoLexes)
--- from Neo: neoLexes = [\m -> eval (m :: l S) | l <- refineBase ...]
+-- from Lexica.Neo: neoLexes = [\m -> eval (m :: l S) | l <- refineBase ...]
 
--- define the RSA parameters for reasoning about joint distributions over
--- worlds, messages, and SA lexica
-neoParams :: Dist d => Params d GQMessage
-neoParams = PM
-  { worldPrior   = uniform gqUniv
-  , messagePrior = uniform neoMessages
-  , lexiconPrior = uniform neoLexes
-  , cost         = \x -> if x == GQMessage nil then 5 else 0
-  , temp         = 1
-  }
+baselex = baseGQLex
+universe = gqUniv
 
 -- specify the alternative utterances
-neoMessages :: [GQMessage]
-neoMessages =
+messages :: [GQMessage]
+messages =
   [ GQMessage (johnQ (\x -> s x scored))
   , GQMessage (johnQ (\x -> s x aced  ))
   , GQMessage (maryQ (\x -> s x scored))
@@ -128,40 +92,16 @@ neoMessages =
   , GQMessage nil
   ]
 
--- evaluate distributions at various levels of LUM iteration
-------------------------------------------------------------------------------
-
--- literal listener with baseLex
--- print the distribution over worlds for each possible message
-dispL0 = sequence_ (map putStrLn test)
-  where test = [prettyDist (show m ++ ", baseLex") (l0 m baseGQLex neoParams) | m <- neoMessages]
-
--- literal speaker with baseLex and gqMessage alternatives
--- print the distribution over messages for each possible world
-dispS0 = sequence_ (map putStrLn test)
-  where test = [prettyDist (show w ++ ", baseLex") (s0 w baseGQLex neoParams) | w <- gqUniv]
-
--- pragmatic listener with gqLexes and gqMessages as alternatives
--- print the distribution over worlds (summing over lexica) for each possible message
-dispL1 = sequence_ (map putStrLn test)
-  where test = [prettyDist (show m) (l1 m neoParams) | m <- neoMessages]
-
-main :: IO ()
-main = do
-  putStrLn ""
-  putStrLn "L0"
-  putStrLn "----------"
-  dispL0
-
-  putStrLn ""
-  putStrLn "S0"
-  putStrLn "----------"
-  dispS0
-
-  putStrLn ""
-  putStrLn "L1"
-  putStrLn "----------"
-  dispL1
+-- define the RSA parameters for reasoning about joint distributions over
+-- worlds, messages, and SA lexica
+params :: Dist d => Params d GQMessage
+params = PM
+  { worldPrior   = uniform universe
+  , messagePrior = uniform messages
+  , lexiconPrior = uniform neoLexes
+  , cost         = \x -> if x == GQMessage nil then 5 else 0
+  , temp         = 1
+  }
 
 -- > L0
 -- > ----------
@@ -207,17 +147,40 @@ main = do
 --}
 
 
-{--
-testLex :: Message -> [Lexicon] -> [World] -> IO ()
-testLex message lexes univ =
-  forM_ lexes (\(Lexicon n lex) -> do
-                 putStrLn ""
-                 putStr n
-                 putStr "::: "
-                 forM_ univ (\w -> do
-                                putStr (show w)
-                                putStr ": "
-                                putStr (show $ lex message w)
-                                putStr ", ")
-                 putStrLn "")
---}
+-- evaluate distributions at various levels of LUM iteration
+------------------------------------------------------------------------------
+
+-- literal listener with baseLex
+-- print the distribution over worlds for each possible message
+dispL0 :: Show m => Lexicon m -> Params BDDist m -> [m] -> IO ()
+dispL0 lex ps ms = sequence_ (map putStrLn test)
+  where test = [prettyDist (show m ++ ", " ++ show lex) (l0 m lex ps) | m <- ms]
+
+-- literal speaker with baseLex and gqMessage alternatives
+-- print the distribution over messages for each possible world
+dispS0 :: Show b => Lexicon b -> Params BDDist b -> [World] -> IO ()
+dispS0 lex ps ws = sequence_ (map putStrLn test)
+  where test = [prettyDist (show w ++ ", " ++ show lex) (s0 w lex ps) | w <- ws]
+
+-- pragmatic listener with gqLexes and gqMessages as alternatives
+-- print the distribution over worlds (summing over lexica) for each possible message
+dispL1 :: (Eq m, Show m) => Params BDDist m -> [m] -> IO ()
+dispL1 ps ms = sequence_ (map putStrLn test)
+  where test = [prettyDist (show m) (l1 m ps) | m <- ms]
+
+main :: IO ()
+main = do
+  putStrLn ""
+  putStrLn "L0"
+  putStrLn "----------"
+  dispL0 baselex params messages
+
+  putStrLn ""
+  putStrLn "S0"
+  putStrLn "----------"
+  dispS0 baselex params universe
+
+  putStrLn ""
+  putStrLn "L1"
+  putStrLn "----------"
+  dispL1 params messages

@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3d37a73ba3d5ff47ecdc3bbb945cf0ef6282ee335a5642cc904978f32971bd5d
+-- hash: 60d2b313dd5de691820afcefed56f5a5cfac90946aa599a8b7976ed9f9afc989
 
 name:           prob-tools
 version:        0.1.0.0
@@ -27,6 +27,7 @@ library
       Lexica
       Lexica.Base
       Lexica.GQ
+      Lexica.Neo
       Lexica.ParseTree
       Lexica.Refinements
       Lexica.SA
