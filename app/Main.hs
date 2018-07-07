@@ -2,11 +2,14 @@
 
 module Main where
 
-import Lexica.Neo
+import Lexica.Adj
+-- import Lexica.SA
+-- import Lexica.GQ
+-- import Lexica.Neo
 import Lexica.Base
 import LUM
 import Prob
-import Model (saUniv, saDom, gqUniv, gqDom, World)
+import Model
 import Lexica
 import Vocab
 import Language.Haskell.TH
@@ -17,7 +20,7 @@ import Language.Haskell.TH
 -- stage the types and priors for LUM over SA alternatives
 ------------------------------------------------------------------------------
 
--- define the GQ lexica that compete with Base
+-- define the SA lexica that compete with Base
 $(mkSALexes)
 -- from Lexica.SA: saLexes = [\m -> eval (m :: l S) | l <- refineBase ...]
 
@@ -64,7 +67,69 @@ params = PM
 
 --}
 
+
 {--}
+
+-- stage the types and priors for LUM over Adj alternatives
+------------------------------------------------------------------------------
+
+baselex = baseAdjLex
+universe = adjUniv
+
+-- define the SA lexica that compete with Base
+adjLexes :: [Lexicon AdjMessage]
+adjLexes =
+  [ Lexicon ("AdjLex" ++ show d) (\(AdjMessage m) w -> runAdj m d w) | d <- heights ]
+
+-- specify the alternative utterances
+messages :: [AdjMessage]
+messages =
+  [ AdjMessage (s john tall)
+  , AdjMessage (s john short)
+  , AdjMessage nil
+  ]
+
+-- define the RSA parameters for reasoning about joint distributions over
+-- worlds, messages, and Adj lexica
+params :: Dist d => Params d AdjMessage
+params = PM
+  { worldPrior   = normalize 0.5 0.15 (zip universe heights)
+  , messagePrior = uniform messages
+  , lexiconPrior = uniform adjLexes
+  , cost         = \x -> if x == AdjMessage nil then 0 else 2
+  , temp         = 4
+  }
+
+-- > L0
+-- > ----------
+-- > P(.|John is tall, baseAdjLex): w5 = 0.42, w6 = 0.34, w7 = 0.17, w8 = 0.06, w9 = 0.01, w10 = 0.00
+-- > P(.|John is short, baseAdjLex): w0 = 0.00, w1 = 0.02, w2 = 0.10, w3 = 0.30, w4 = 0.58
+-- > P(.|Silence, baseAdjLex): w0 = 0.00, w1 = 0.01, w2 = 0.04, w3 = 0.11, w4 = 0.21, w5 = 0.27, w6 = 0.21, w7 = 0.11, w8 = 0.04, w9 = 0.01, w10 = 0.00
+
+-- > S0
+-- > ----------
+-- > P(.|w0, baseAdjLex): John is short = 0.02, Silence = 0.98
+-- > P(.|w1, baseAdjLex): John is short = 0.02, Silence = 0.98
+-- > P(.|w2, baseAdjLex): John is short = 0.02, Silence = 0.98
+-- > P(.|w3, baseAdjLex): John is short = 0.02, Silence = 0.98
+-- > P(.|w4, baseAdjLex): John is short = 0.02, Silence = 0.98
+-- > P(.|w5, baseAdjLex): John is tall = 0.00, Silence = 1.00
+-- > P(.|w6, baseAdjLex): John is tall = 0.00, Silence = 1.00
+-- > P(.|w7, baseAdjLex): John is tall = 0.00, Silence = 1.00
+-- > P(.|w8, baseAdjLex): John is tall = 0.00, Silence = 1.00
+-- > P(.|w9, baseAdjLex): John is tall = 0.00, Silence = 1.00
+-- > P(.|w10, baseAdjLex): John is tall = 0.00, Silence = 1.00
+
+-- > L1
+-- > ----------
+-- > P(.|John is tall): w10 = 0.03, w9 = 0.15, w8 = 0.41, w7 = 0.36, w6 = 0.04, w5 = 0.01, w4 = 0.00, w3 = 0.00, w2 = 0.00, w1 = 0.00, w0 = 0.00
+-- > P(.|John is short): w9 = 0.00, w8 = 0.00, w7 = 0.00, w6 = 0.00, w5 = 0.01, w4 = 0.04, w3 = 0.36, w2 = 0.41, w1 = 0.15, w0 = 0.03
+-- > P(.|Silence): w10 = 0.00, w9 = 0.01, w8 = 0.03, w7 = 0.11, w6 = 0.22, w5 = 0.27, w4 = 0.22, w3 = 0.11, w2 = 0.03, w1 = 0.01, w0 = 0.00
+
+--}
+
+
+{--
 
 -- stage the types and priors for LUM over Neo alternatives
 ------------------------------------------------------------------------------
@@ -93,7 +158,7 @@ messages =
   ]
 
 -- define the RSA parameters for reasoning about joint distributions over
--- worlds, messages, and SA lexica
+-- worlds, messages, and Neo lexica
 params :: Dist d => Params d GQMessage
 params = PM
   { worldPrior   = uniform universe
@@ -150,19 +215,19 @@ params = PM
 -- evaluate distributions at various levels of LUM iteration
 ------------------------------------------------------------------------------
 
--- literal listener with baseLex
+-- literal listener with lex
 -- print the distribution over worlds for each possible message
-dispL0 :: Show m => Lexicon m -> Params BDDist m -> [m] -> IO ()
+dispL0 :: (Eq m, Show m) => Lexicon m -> Params BDDist m -> [m] -> IO ()
 dispL0 lex ps ms = sequence_ (map putStrLn test)
   where test = [prettyDist (show m ++ ", " ++ show lex) (l0 m lex ps) | m <- ms]
 
--- literal speaker with baseLex and gqMessage alternatives
+-- literal speaker with lex
 -- print the distribution over messages for each possible world
-dispS0 :: Show b => Lexicon b -> Params BDDist b -> [World] -> IO ()
+dispS0 :: (Eq b, Show b) => Lexicon b -> Params BDDist b -> [World] -> IO ()
 dispS0 lex ps ws = sequence_ (map putStrLn test)
   where test = [prettyDist (show w ++ ", " ++ show lex) (s0 w lex ps) | w <- ws]
 
--- pragmatic listener with gqLexes and gqMessages as alternatives
+-- pragmatic listener summing over lexes
 -- print the distribution over worlds (summing over lexica) for each possible message
 dispL1 :: (Eq m, Show m) => Params BDDist m -> [m] -> IO ()
 dispL1 ps ms = sequence_ (map putStrLn test)

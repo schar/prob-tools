@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 60d2b313dd5de691820afcefed56f5a5cfac90946aa599a8b7976ed9f9afc989
+-- hash: e0d50fef6ffdcf4459a2c92c37a011ee2b40850dbe4f8eca3cbf728c324ffec8
 
 name:           prob-tools
 version:        0.1.0.0
@@ -19,12 +19,13 @@ library
   build-depends:
       base >=4.7 && <5
     , containers
-    , random
+    , mwc-random
     , semiring-simple
     , template-haskell
     , transformers
   exposed-modules:
       Lexica
+      Lexica.Adj
       Lexica.Base
       Lexica.GQ
       Lexica.Neo
@@ -48,8 +49,8 @@ executable prob-tools-exe
   build-depends:
       base >=4.7 && <5
     , containers
+    , mwc-random
     , prob-tools
-    , random
     , semiring-simple
     , template-haskell
     , transformers

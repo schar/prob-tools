@@ -22,6 +22,12 @@ type family TypeOf a where
   TypeOf VP = World -> [Entity]
   TypeOf TV = World -> [(Entity,Entity)]
 
+type family DTypeOf a where
+  DTypeOf S  = Deg -> Prop
+  DTypeOf NP = Deg -> Entity
+  DTypeOf VP = Deg -> World -> [Entity]
+  DTypeOf TV = Deg -> World -> [(Entity,Entity)]
+
 -- Lex classes define terms for different kinds of obj language expressions
 ------------------------------------------------------------------------------
 class Grammar f where
@@ -47,6 +53,9 @@ class (SALex f) => GQLex f where
   somePlayer  :: (f NP -> f S) -> f S
   everyPlayer :: (f NP -> f S) -> f S
 
+class (NameLex f) => AdjLex f where
+  tall :: f VP
+  short :: f VP
 
 -- a message is an unevaluated obj language term of category S
 ------------------------------------------------------------------------------
@@ -65,6 +74,14 @@ instance Ord SAMessage where
   compare (SAMessage m) (SAMessage m') = compare (m :: ParseTree S) m'
 instance Show SAMessage where
   show (SAMessage m) = show (m :: ParseTree S)
+
+newtype AdjMessage = AdjMessage (forall f. (Grammar f, NameLex f, AdjLex f) => f S)
+instance Eq AdjMessage where
+  (AdjMessage m) == (AdjMessage m') = (m :: ParseTree S) == m'
+instance Ord AdjMessage where
+  compare (AdjMessage m) (AdjMessage m') = compare (m :: ParseTree S) m'
+instance Show AdjMessage where
+  show (AdjMessage m) = show (m :: ParseTree S)
 
 -- first lexicon: ParseTree carries terms to trees of strings
 ------------------------------------------------------------------------------
@@ -97,3 +114,7 @@ instance GQLex ParseTree where
   noPlayer q    = q (PT $ Node "" [pure "no player"])
   somePlayer  q    = q (PT $ Node "" [pure "some player" ])
   everyPlayer q    = q (PT $ Node "" [pure "every player"])
+
+instance AdjLex ParseTree where
+  tall = PT $ pure "is tall"
+  short = PT $ pure "is short"

@@ -38,7 +38,6 @@ instance GQLex Base where
   somePlayer q      = B $ \w -> any (\y -> eval (q (B y)) w) (player' w)
   everyPlayer q     = B $ \w -> all (\y -> eval (q (B y)) w) (player' w)
 
-
 baseGQLex :: Lexicon GQMessage
 baseGQLex = Lexicon "Base" (\(GQMessage m) -> runBase m)
 

@@ -24,18 +24,18 @@ data Params d m = PM
   { worldPrior   :: d World -- distribution over worlds
   , messagePrior :: d m -- distribution over messages
   , lexiconPrior :: d (Lexicon m) -- distribution over [[ ]] functions
-  , cost         :: m -> Sum Float -- message costs
-  , temp         :: Sum Float -- don't really know what this does
+  , cost         :: m -> Double -- message costs
+  , temp         :: Double -- don't really know what this does
   }
 
 
 -- Helper functions for scaling probabilities
 scale :: m -> Params d m -> BDDist a -> BDDist a
-scale m model = modify (exp . (temp model *) . subtract (cost model m) . log)
+scale m model = modify (fmap $ exp . (temp model *) . subtract (cost model m) . log)
 
 modify :: (Prob -> Prob) -> BDDist a -> BDDist a
 modify f mx = MaybeT (MassT f'd)
-  where f'd = [Mass (f n) x | Mass n x <- runMassT (runMaybeT mx)]
+  where f'd = [Mass (f n) x | Mass n x <- runBDDist mx]
 
 -- Sum weights of identical outcomes
 weightedEq :: (Dist m, Eq a) => [Mass Prob a] -> m a
@@ -55,7 +55,7 @@ groupEqBy f (a:rest) = (a:as) : groupEqBy f bs
 -- given a message `m` and lexicon `lex`, return a distribution over worlds `w`
 -- that could be described by `m` when interpreted by `lex`, weighted by world
 -- prior
-l0 :: m -> Lexicon m -> Params BDDist m -> BDDist World
+l0 :: Eq m => m -> Lexicon m -> Params BDDist m -> BDDist World
 l0 m lex model = bayes $ do
   w <- worldPrior model
   guard (interpret lex m w)
@@ -66,7 +66,7 @@ l0 m lex model = bayes $ do
 -- given a world `w` and lexicon `lex`, return a distribution over messages `m`
 -- that are true of `w` when interpreted by `lex`, weighted by message prior and
 -- cost
-s0 :: World -> Lexicon m -> Params BDDist m -> BDDist m
+s0 :: Eq m => World -> Lexicon m -> Params BDDist m -> BDDist m
 s0 w lex model = bayes $ do
   m <- messagePrior model
   w' <- scale m model (l0 m lex model)
