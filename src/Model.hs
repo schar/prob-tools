@@ -58,8 +58,6 @@ wNN, wNS, wNA, wSN, wSS, wSA, wAN, wAS, wAA :: World
 
 -- the Adj model
 ------------------------------------------------------------------------------
-
--- 11 points between 0 and 1
 heights :: [Deg]
 heights = [n / 10.0 | n <- [0..10]]
 

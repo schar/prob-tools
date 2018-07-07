@@ -48,6 +48,9 @@ deriveSALex name sadict = do
                 aced        = $d $ \w -> [x | (x,v) <- aced'   sadict, v == w]
 
               instance GQLex $t where
+                johnQ       q   = q john
+                maryQ       q   = q mary
+                noPlayer    q   = $d $ \w -> not (any (\y -> eval (q ($d y)) w) (player' w))
                 somePlayer  q   = $d $ \w -> any (\y -> eval (q ($d y)) w) (player' w)
                 everyPlayer q   = $d $ \w -> all (\y -> eval (q ($d y)) w) (player' w)
           |]

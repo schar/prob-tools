@@ -83,14 +83,15 @@ instance Ord AdjMessage where
 instance Show AdjMessage where
   show (AdjMessage m) = show (m :: ParseTree S)
 
--- first lexicon: ParseTree carries terms to trees of strings
+-- The ParseTree lexicon interprets terms as trees of strings
 ------------------------------------------------------------------------------
 instance (Ord a) => Ord (Tree a) where
   compare = compare1
 data ParseTree a = Nil | PT (Tree String) deriving (Eq, Ord)
+
 instance Show (ParseTree a) where
-  show (PT tree) = foldTree (\x cs -> if null cs then x else intercalate " " cs) tree
-  show Nil       = "Silence"
+  show (PT tree)    = foldTree (\x cs -> if null cs then x else intercalate " " cs) tree
+  show Nil          = "----"
 
 instance Grammar ParseTree where
   s (PT x) (PT f)   = PT $ Node "" [x,f]
@@ -109,12 +110,12 @@ instance SALex ParseTree where
   scored            = PT $ pure "scored"
 
 instance GQLex ParseTree where
-  johnQ  q    = q (PT $ Node "" [pure "John" ])
-  maryQ  q    = q (PT $ Node "" [pure "Mary" ])
-  noPlayer q    = q (PT $ Node "" [pure "no player"])
+  johnQ       q    = q (PT $ Node "" [pure "John" ])
+  maryQ       q    = q (PT $ Node "" [pure "Mary" ])
+  noPlayer    q    = q (PT $ Node "" [pure "no player"])
   somePlayer  q    = q (PT $ Node "" [pure "some player" ])
   everyPlayer q    = q (PT $ Node "" [pure "every player"])
 
 instance AdjLex ParseTree where
-  tall = PT $ pure "is tall"
-  short = PT $ pure "is short"
+  tall             = PT $ pure "is tall"
+  short            = PT $ pure "is short"

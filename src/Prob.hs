@@ -7,7 +7,6 @@ import           Control.Applicative
 import           Control.Monad             (join, guard, replicateM)
 import           Control.Monad.Trans.Class (lift)
 import           Control.Monad.Trans.Maybe
--- import qualified Data.HashMap.Lazy as M
 import           Data.List                 (foldl', nub, intercalate, group, sort, (\\))
 import           Data.Maybe                (catMaybes)
 import qualified System.Random.MWC as Rand
@@ -16,7 +15,7 @@ import           Numeric                   (showFFloat)
 import           Utils
 
 --
--- Dist monads support normalization
+-- Dist monads can represent finite lists of weighted of values
 --
 
 class Monad m => Dist m where
@@ -29,7 +28,7 @@ coin :: (Eq a, Dist m) => Prob -> a -> a -> m a
 coin n x1 x2 = weighted [Mass n x1, Mass (1-n) x2]
 
 --
--- DDist
+-- DDist: Discrete distributions
 --
 
 type DDist = MassT Prob []
@@ -43,7 +42,7 @@ instance Dist DDist where
   --   where total = foldMap getFstMass vs
 
 --
--- MC sampling
+-- MC: Sampling distributions
 --
 
 newtype MC a = MC { runMC :: IO a }
@@ -82,7 +81,7 @@ instance Dist m => Dist (MaybeT m) where
   weighted = lift . weighted
 
 --
--- Bayesian DDist
+-- Bayesian updates on DDists
 --
 
 type BDDist = MaybeT DDist
@@ -90,13 +89,13 @@ type BDDist = MaybeT DDist
 runBDDist :: BDDist a -> [Mass Prob (Maybe a)]
 runBDDist = runMassT . runMaybeT
 
+-- remove values where conditions have failed and renormalize
 bayes :: (Eq a, Dist m) => BDDist a -> m a
 bayes = weighted . catMaybes . fmap pull . runBDDist
-  where -- catMaybes' = catMaybes . fmap pull
-        pull (Mass y mx) = do {x <- mx; return (Mass y x)}
+  where pull (Mass y mx) = do {x <- mx; return (Mass y x)}
 
 --
--- Bayesian MC
+-- Bayesian updates on MC samplers
 --
 
 type BMC = MaybeT MC
@@ -147,4 +146,3 @@ test3 = runMC . sample 10 . join . MC $ bayesMC 10000 statusCondPos
 prettyDist :: Show b => String -> BDDist b -> String
 prettyDist o mx = "P(.|" ++ o ++ "): " ++ intercalate ", " (go <$> runBDDist mx)
   where go = \(Mass (Sum n) (Just x)) -> show x ++ " = " ++ showFFloat (Just 2) n ""
-        -- prettyN (Sum n) = showFFloat (Just 2) n ""

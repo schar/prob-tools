@@ -1,21 +1,9 @@
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE DeriveLift #-}
 
 module Lexica where
 
 import Language.Haskell.TH
-import Language.Haskell.TH.Syntax
 import Vocab
--- import Lexica.ParseTree
--- import Lexica.SA as SA (mkSALexes)
--- import Lexica.GQ as GQ (mkGQLexes)
--- -- import LUM
--- import Lexica
--- import Model
--- import Control.Monad (MonadPlus, forM, filterM)
--- import Data.List (subsequences, (\\))
 
 
 -- convenience type differentiating and labeling lexica
@@ -38,4 +26,3 @@ genData name = dataD (cxt []) name    vars Nothing   fields             derives
         b       = bang noSourceUnpackedness noSourceStrictness
         fields  = [normalC name [bangType b [t| TypeOf $(varT a) |]]]
         derives = []
-

@@ -11,13 +11,6 @@ import Model
 import Prob
 import Utils
 
--- instance Message m => Eq m where
---   m == m' = (open m :: ParseTree S) == (m' :: ParseTree S)
--- instance Message m => Ord m where
---   compare m m' = compare (open m :: ParseTree S) (open m' :: ParseTree S)
--- instance Message m => Show m where
---   show m = show (open m :: ParseTree S)
-
 
 -- RSA model parameters
 data Params d m = PM
@@ -79,7 +72,7 @@ s0 w lex model = bayes $ do
 -- `m` under /some/ lexicon, weighted by world prior, lexicon prior,
 -- and likelihood of s0 to describe `w` with `m`
 l1 :: (Eq m) => m -> Params BDDist m -> BDDist World
-l1 m model = weightedEq . runMassT . bayes $ do
+l1 m model = bayes $ do
   w <- worldPrior model
   sem <- (lexiconPrior model)
   m' <- s0 w sem model
