@@ -1,13 +1,13 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module Experiments.Vagueness where
+module Experiments.Vagueness.SimpleThreshold.Trials where
 
-import Lexica.AdjGT
-import Lexica.Base
+import Experiments.Vagueness.SimpleThreshold.Domain
+import Experiments.Vagueness.SimpleThreshold.Lexica
+-- import Lexica.Base
 import Lexica
 import LUM
 import Prob
-import Model
 import Vocab
 import Experiments
 {--}
@@ -17,11 +17,6 @@ import Experiments
 
 baselex = baseAdjGTLex
 universe = adjUniv
-
--- define the SA lexica that compete with Base
-adjLexes :: [Lexicon AdjMessage]
-adjLexes =
-  [ Lexicon ("AdjLex" ++ show d) (\(AdjMessage m) w -> runAdjGT m d w) | d <- heights ]
 
 -- specify the alternative utterances
 messages :: [AdjMessage]
@@ -33,13 +28,13 @@ messages =
 
 -- define the RSA parameters for reasoning about joint distributions over
 -- worlds, messages, and Adj lexica
-params :: Dist d => Params d AdjMessage
+params :: Dist d => Params d AdjMessage World
 params = PM
   { worldPrior   = normalize 0.5 0.15 (zip universe heights)
   , messagePrior = uniform messages
   , lexiconPrior = uniform adjLexes
   , cost         = \x -> if x == AdjMessage nil then 0 else 2
-  , temp         = 5
+  , temp         = 4
   }
 
 -- evaluate distributions at various levels of LUM iteration

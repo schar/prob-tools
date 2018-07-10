@@ -1,19 +1,72 @@
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE DeriveLift #-}
 
-module Lexica.SA where
+module Experiments.Scalar.SimpleScalar.Lexica where
 
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
 -- import LUM
 import Lexica
-import Lexica.Base
+import Lexica.ParseTree
 import Vocab
-import Model
+import Experiments.Scalar.SimpleScalar.Domain
 import Control.Monad (MonadPlus, forM, filterM)
-import Data.List (subsequences, (\\))
+import Data.List (intersect, nub, subsequences, (\\))
 
+
+type Prop = World -> Bool
+type family TypeOf a where
+  TypeOf S  = Prop
+  TypeOf NP = Entity
+  TypeOf VP = World -> [Entity]
+  TypeOf TV = World -> [(Entity,Entity)]
+
+class Eval f where
+  eval   :: f S -> Prop
+
+newtype SAMessage = SAMessage (forall f. (Grammar f, NameLex f, SALex f) => f S)
+instance Eq SAMessage where
+  (SAMessage m) == (SAMessage m') = (m :: ParseTree S) == m'
+instance Ord SAMessage where
+  compare (SAMessage m) (SAMessage m') = compare (m :: ParseTree S) m'
+instance Show SAMessage where
+  show (SAMessage m) = show (m :: ParseTree S)
+
+-- base lexicon
+
+data Base a = B {runBase :: (TypeOf a)}
+
+instance Grammar Base where
+  s (B x) (B f)     = B $ \w -> x `elem` f w
+  tvp (B f) (B x)   = B $ \w -> [y | (x,y) <- f w]
+  nil               = B $ const True
+
+instance Eval Base where
+  eval              = runBase
+
+instance NameLex Base where
+  john              = B $ John
+  mary              = B $ Mary
+
+instance SALex Base where
+  scored            = B $ \w -> nub [x | y <- shot' w, (x,y) <- hit' w]
+  aced              = B $ \w -> nub [x | (x,_) <- hit' w, shot' w == shot' w `intersect` [y | (z,y) <- hit' w, z==x]]
+
+instance GQLex Base where
+  johnQ q           = q john
+  maryQ q           = q mary
+  noPlayer q        = B $ \w -> not (any (\y -> eval (q (B y)) w) (player' w))
+  somePlayer q      = B $ \w -> any (\y -> eval (q (B y)) w) (player' w)
+  everyPlayer q     = B $ \w -> all (\y -> eval (q (B y)) w) (player' w)
+
+instance MannerLex Base where
+  started           = B $ const True
+  gotStarted        = B $ const True
+
+baseSALex :: Lexicon SAMessage World
+baseSALex = Lexicon "Base" (\(SAMessage m) -> runBase m)
 
 -- macros to generate lexicon instances for refinements of Base
 ------------------------------------------------------------------------------
@@ -25,6 +78,27 @@ data SADict = SADict
   }
   deriving (Eq, Show, Lift)
 
+-- at a concrete model with domain of entities `dom` and domain of worlds `univ`,
+-- generate all possible refinements of the Base lexicon
+refineSABase :: [Entity] -> [World] -> [SADict]
+refineSABase dom univ =
+  let pset    = tail . subsequences
+                -- powerset-plus function
+      pScored = pset [(x,w) | w <- univ, x <- runBase scored w]
+                -- powerset of Base's interpretation of "scored"
+      pAced   = pset [(x,w) | w <- univ, x <- runBase aced   w]
+                -- powerset of Base's interpretation of "aced"
+   in [ SADict {scored' = sc, aced' = ac} | sc <- pScored, ac <- pAced ]
+
+-- declare a lexicon type called `name`
+genData :: Name -> Q Dec
+genData name = dataD (cxt []) name    vars Nothing   fields             derives
+            -- data           LexName a            = LexName (TypeOf a)
+  where a       = mkName "a"
+        vars    = [PlainTV a]
+        b       = bang noSourceUnpackedness noSourceStrictness
+        fields  = [normalC name [bangType b [t| TypeOf $(varT a) |]]]
+        derives = []
 
 -- given a refinement dictionary, declare the evaluation algebras that define
 -- the `name` lexicon
@@ -59,18 +133,6 @@ deriveSALex name sadict = do
         d  = conE name
         px = conP name [[p|x|]]
         pf = conP name [[p|f|]]
-
--- at a concrete model with domain of entities `dom` and domain of worlds `univ`,
--- generate all possible refinements of the Base lexicon
-refineSABase :: [Entity] -> [World] -> [SADict]
-refineSABase dom univ =
-  let pset    = tail . subsequences
-                -- powerset-plus function
-      pScored = pset [(x,w) | w <- univ, x <- runBase scored w]
-                -- powerset of Base's interpretation of "scored"
-      pAced   = pset [(x,w) | w <- univ, x <- runBase aced   w]
-                -- powerset of Base's interpretation of "aced"
-   in [ SADict {scored' = sc, aced' = ac} | sc <- pScored, ac <- pAced ]
 
 -- declare lexica for all possible refinements of Base
 mkSALexes :: Q [Dec]

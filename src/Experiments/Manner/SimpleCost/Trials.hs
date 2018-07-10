@@ -1,13 +1,13 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module Experiments.Manner where
+module Experiments.Manner.SimpleCost.Trials where
 
-import Lexica.Manner
+import Experiments.Manner.SimpleCost.Domain
+import Experiments.Manner.SimpleCost.Lexica
 import Lexica.Base
 import LUM
 import Prob
 import Utils
-import Model
 import Vocab
 import Experiments
 

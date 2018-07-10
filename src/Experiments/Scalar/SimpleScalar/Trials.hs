@@ -1,12 +1,12 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module Experiments.SimpleScalar where
+module Experiments.Scalar.SimpleScalar.Trials where
 
-import Lexica.SA
-import Lexica.Base
+import Experiments.Scalar.SimpleScalar.Domain
+import Experiments.Scalar.SimpleScalar.Lexica
+-- import Lexica.Base
 import LUM
 import Prob
-import Model
 import Vocab
 import Experiments
 

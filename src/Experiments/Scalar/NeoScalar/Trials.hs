@@ -1,12 +1,12 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module Experiments.NeoScalar where
+module Experiments.Scalar.NeoScalar.Trials where
 
-import Lexica.Neo
-import Lexica.Base
+import Experiments.Scalar.NeoScalar.Domain
+import Experiments.Scalar.NeoScalar.Lexica
+-- import Lexica.Base
 import LUM
 import Prob
-import Model
 import Vocab
 import Experiments
 

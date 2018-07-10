@@ -7,23 +7,23 @@ import Data.Function             (on)
 import Data.List                 (partition)
 import Lexica
 import Vocab
-import Model
+-- import Model
 import Prob
 import Utils
 
 
 -- RSA model parameters
-data Params d m = PM
-  { worldPrior   :: d World -- distribution over worlds
+data Params d m w = PM
+  { worldPrior   :: d w -- distribution over worlds
   , messagePrior :: d m -- distribution over messages
-  , lexiconPrior :: d (Lexicon m) -- distribution over [[ ]] functions
+  , lexiconPrior :: d (Lexicon m w) -- distribution over [[ ]] functions
   , cost         :: m -> Double -- message costs
   , temp         :: Double -- don't really know what this does
   }
 
 
 -- Helper functions for scaling probabilities
-scale :: m -> Params d m -> BDDist a -> BDDist a
+scale :: m -> Params d m w -> BDDist a -> BDDist a
 scale m model = modify (fmap $ exp . (temp model *) . subtract (cost model m) . log)
 
 modify :: (Prob -> Prob) -> BDDist a -> BDDist a
@@ -43,7 +43,7 @@ groupEqBy f (a:rest) = (a:as) : groupEqBy f bs
   where (as,bs) = partition (f a) rest
 
 
-listener :: Eq m => Int -> m -> Lexicon m -> Params BDDist m -> BDDist World
+listener :: (Eq w, Eq m) => Int -> m -> Lexicon m w -> Params BDDist m w -> BDDist w
 listener 0 m lex model = bayes $
   do w <- worldPrior model
      guard (interpret lex m w)
@@ -60,7 +60,7 @@ listener n m lex model = bayes $
      guard (m' == m)
      return w
 
-speaker :: Eq m => Int -> World -> Lexicon m -> Params BDDist m -> BDDist m
+speaker :: (Eq w, Eq m) => Int -> w -> Lexicon m w -> Params BDDist m w -> BDDist m
 speaker n w lex model = bayes $
   do m <- messagePrior model
      w' <- scale m model (listener (n-1) m lex model)

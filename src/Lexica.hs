@@ -4,29 +4,19 @@ module Lexica where
 
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
-import Vocab
+-- import Vocab
 
 
 -- convenience type differentiating and labeling lexica
 ------------------------------------------------------------------------------
-data Lexicon m = Lexicon
-  { lexName :: String, interpret :: m -> Prop }
-instance Eq (Lexicon m) where
+data Lexicon m w = Lexicon
+  { lexName :: String, interpret :: m -> w -> Bool }
+instance Eq (Lexicon m w) where
   (Lexicon name _) == (Lexicon name' _) = name == name'
-instance Ord (Lexicon m) where
+instance Ord (Lexicon m w) where
   compare (Lexicon name _) (Lexicon name' _) = compare name name'
-instance Show (Lexicon m) where
+instance Show (Lexicon m w) where
   show (Lexicon name _) = name
-
--- declare a lexicon type called `name`
-genData :: Name -> Q Dec
-genData name = dataD (cxt []) name    vars Nothing   fields             derives
-            -- data           LexName a            = LexName (TypeOf a)
-  where a       = mkName "a"
-        vars    = [PlainTV a]
-        b       = bang noSourceUnpackedness noSourceStrictness
-        fields  = [normalC name [bangType b [t| TypeOf $(varT a) |]]]
-        derives = []
 
 mkMessageInstances :: Name -> Q [Dec]
 mkMessageInstances name =

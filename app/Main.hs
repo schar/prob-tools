@@ -5,7 +5,7 @@ module Main
   )
   where
 
-import qualified Experiments.Vagueness as V
+import qualified Experiments.Vagueness.SimpleThreshold.Trials as V
 
 main :: IO ()
 main = V.main

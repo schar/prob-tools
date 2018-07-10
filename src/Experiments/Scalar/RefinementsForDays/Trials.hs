@@ -1,12 +1,12 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module Experiments.RefinementsForDays where
+module Experiments.Scalar.RefinementsForDays.Trials where
 
-import Lexica.GQ
-import Lexica.Base
+import Experiments.Scalar.RefinementsForDays.Domain
+import Experiments.Scalar.RefinementsForDays.Lexica
+-- import Lexica.Base
 import LUM
 import Prob
-import Model
 import Vocab
 import Experiments
 

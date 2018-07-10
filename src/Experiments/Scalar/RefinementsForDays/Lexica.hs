@@ -2,20 +2,72 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE DeriveLift #-}
 
-module Lexica.GQ where
+module Experiments.Scalar.RefinementsForDays.Lexica where
 
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
 -- import LUM
 -- import Lexica (genData)
 import Vocab
-import Lexica.Base
+-- import Lexica.Base
 import Lexica.ParseTree
 import Lexica
-import Model
+import Experiments.Scalar.RefinementsForDays.Domain
 import Control.Monad (MonadPlus, forM, filterM)
 import Data.List (subsequences, (\\))
 
+
+type Prop = World -> Bool
+type family TypeOf a where
+  TypeOf S  = Prop
+  TypeOf NP = Entity
+  TypeOf VP = World -> [Entity]
+  TypeOf TV = World -> [(Entity,Entity)]
+
+class Eval f where
+  eval   :: f S -> Prop
+
+newtype GQMessage = GQMessage (forall f. (Grammar f, NameLex f, SALex f, GQLex f) => f S)
+instance Eq GQMessage where
+  (GQMessage m) == (GQMessage m') = (m :: ParseTree S) == m'
+instance Ord GQMessage where
+  compare (GQMessage m) (GQMessage m') = compare (m :: ParseTree S) m'
+instance Show GQMessage where
+  show (GQMessage m) = show (m :: ParseTree S)
+
+-- base lexicon
+
+data Base a = B {runBase :: (TypeOf a)}
+
+instance Grammar Base where
+  s (B x) (B f)     = B $ \w -> x `elem` f w
+  tvp (B f) (B x)   = B $ \w -> [y | (x,y) <- f w]
+  nil               = B $ const True
+
+instance Eval Base where
+  eval              = runBase
+
+instance NameLex Base where
+  john              = B $ John
+  mary              = B $ Mary
+
+instance SALex Base where
+  scored            = B $ \w -> nub [x | y <- shot' w, (x,y) <- hit' w]
+  aced              = B $ \w -> nub [x | (x,_) <- hit' w, shot' w == shot' w `intersect` [y | (z,y) <- hit' w, z==x]]
+
+instance GQLex Base where
+  johnQ q           = q john
+  maryQ q           = q mary
+  noPlayer q        = B $ \w -> not (any (\y -> eval (q (B y)) w) (player' w))
+  somePlayer q      = B $ \w -> any (\y -> eval (q (B y)) w) (player' w)
+  everyPlayer q     = B $ \w -> all (\y -> eval (q (B y)) w) (player' w)
+
+instance MannerLex Base where
+  started           = B $ const True
+  gotStarted        = B $ const True
+
+baseGQLex :: Lexicon GQMessage
+baseGQLex = Lexicon "Base" (\(GQMessage m) -> runBase m)
 
 -- macros to generate lexicon instances for GQ refinements of Base
 ------------------------------------------------------------------------------
@@ -25,6 +77,18 @@ data GQDict = GQDict
   , everyPlayer' :: [[Entity]]
   }
   deriving (Eq, Show, Lift)
+
+refineGQBase :: [Entity] -> [World] -> [GQDict]
+-- takes about an hour to compile, due to ~64K refinements
+{--}
+refineGQBase dom univ =
+  let pset    = tail . subsequences
+                -- powerset-plus function
+      propDom = pset dom
+      pSome   = pset [q | q <- propDom, runBase (somePlayer  (\(B x) -> B $ \_ -> x `elem` q)) (head univ)]
+      pEvery  = pset [q | q <- propDom, runBase (everyPlayer (\(B x) -> B $ \_ -> x `elem` q)) (head univ)]
+   in [ GQDict {somePlayer' = sm, everyPlayer' = ev} | sm <- pSome, ev <- pEvery ]
+--}
 
 -- given a refinement dictionary, declare the evaluation algebras that define
 -- the `name` lexicon
@@ -59,19 +123,6 @@ deriveGQLex name gqdict = do
         d  = conE name
         px = conP name [[p|x|]]
         pf = conP name [[p|f|]]
-
-
-refineGQBase :: [Entity] -> [World] -> [GQDict]
--- takes about an hour to compile, due to ~64K refinements
-{--}
-refineGQBase dom univ =
-  let pset    = tail . subsequences
-                -- powerset-plus function
-      propDom = pset dom
-      pSome   = pset [q | q <- propDom, runBase (somePlayer  (\(B x) -> B $ \_ -> x `elem` q)) (head univ)]
-      pEvery  = pset [q | q <- propDom, runBase (everyPlayer (\(B x) -> B $ \_ -> x `elem` q)) (head univ)]
-   in [ GQDict {somePlayer' = sm, everyPlayer' = ev} | sm <- pSome, ev <- pEvery ]
---}
 
 -- declare lexica for all possible refinements of Base
 mkGQLexes :: Q [Dec]
