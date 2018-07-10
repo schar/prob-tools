@@ -7,17 +7,6 @@ import Language.Haskell.TH.Syntax
 -- import Vocab
 
 
--- convenience type differentiating and labeling lexica
-------------------------------------------------------------------------------
-data Lexicon m w = Lexicon
-  { lexName :: String, interpret :: m -> w -> Bool }
-instance Eq (Lexicon m w) where
-  (Lexicon name _) == (Lexicon name' _) = name == name'
-instance Ord (Lexicon m w) where
-  compare (Lexicon name _) (Lexicon name' _) = compare name name'
-instance Show (Lexicon m w) where
-  show (Lexicon name _) = name
-
 mkMessageInstances :: Name -> Q [Dec]
 mkMessageInstances name =
   [d| instance Eq $t where

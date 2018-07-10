@@ -4,11 +4,9 @@ module Experiments.Scalar.NeoScalar.Trials where
 
 import Experiments.Scalar.NeoScalar.Domain
 import Experiments.Scalar.NeoScalar.Lexica
--- import Lexica.Base
 import LUM
 import Prob
 import Vocab
-import Experiments
 
 
 {--}
@@ -41,7 +39,7 @@ messages =
 
 -- define the RSA parameters for reasoning about joint distributions over
 -- worlds, messages, and Neo lexica
-params :: Dist d => Params d GQMessage
+params :: Dist d => Params d GQMessage World
 params = PM
   { worldPrior   = uniform universe
   , messagePrior = uniform messages

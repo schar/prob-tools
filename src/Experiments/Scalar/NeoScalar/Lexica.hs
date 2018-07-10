@@ -5,18 +5,15 @@
 
 module Experiments.Scalar.NeoScalar.Lexica where
 
+import Vocab
+import Experiments.Scalar.NeoScalar.Domain
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
--- import LUM
--- import Lexica (genData)
-import Vocab
-import Lexica.ParseTree
-import Lexica
-import Experiments.Scalar.NeoScalar.Domain
-import Control.Monad (MonadPlus, forM, filterM)
 import Data.List (intersect, nub, subsequences, (\\))
 
 
+-- Scalar lexica  interpret terms as familiar e/s/t denotations
+------------------------------------------------------------------------------
 type Prop = World -> Bool
 type family TypeOf a where
   TypeOf S  = Prop
@@ -27,16 +24,13 @@ type family TypeOf a where
 class Eval f where
   eval   :: f S -> Prop
 
+-- a message is an unevaluated obj language term of category S
+------------------------------------------------------------------------------
 newtype GQMessage = GQMessage (forall f. (Grammar f, NameLex f, SALex f, GQLex f) => f S)
-instance Eq GQMessage where
-  (GQMessage m) == (GQMessage m') = (m :: ParseTree S) == m'
-instance Ord GQMessage where
-  compare (GQMessage m) (GQMessage m') = compare (m :: ParseTree S) m'
-instance Show GQMessage where
-  show (GQMessage m) = show (m :: ParseTree S)
+mkMessageInstances ''GQMessage 'GQMessage
 
 -- base lexicon
-
+------------------------------------------------------------------------------
 data Base a = B {runBase :: (TypeOf a)}
 
 instance Grammar Base where
@@ -61,10 +55,6 @@ instance GQLex Base where
   noPlayer q        = B $ \w -> not (any (\y -> eval (q (B y)) w) (player' w))
   somePlayer q      = B $ \w -> any (\y -> eval (q (B y)) w) (player' w)
   everyPlayer q     = B $ \w -> all (\y -> eval (q (B y)) w) (player' w)
-
-instance MannerLex Base where
-  started           = B $ const True
-  gotStarted        = B $ const True
 
 baseGQLex :: Lexicon GQMessage World
 baseGQLex = Lexicon "Base" (\(GQMessage m) -> runBase m)
@@ -146,11 +136,11 @@ deriveNeoLex name neodict = do
                 aced        = $d $(aced' neodict)
 
               instance GQLex $t where
-                johnQ q  = $d ($(johnQ' neodict) (\x -> case (q ($d x)) of {$px -> x}))
-                maryQ q  = $d ($(maryQ' neodict) (\x -> eval (q ($d x))))
-                noPlayer q = $d ($(noPlayer' neodict) (\x -> eval (q ($d x))))
-                somePlayer q  = $d ($(somePlayer' neodict) (\x -> eval (q ($d x))))
-                everyPlayer q = $d ($(everyPlayer' neodict) (\x -> eval (q ($d x))))
+                johnQ q  = $d ($(johnQ' neodict) (\y -> case (q ($d y)) of {$px -> x}))
+                maryQ q  = $d ($(maryQ' neodict) (\y -> eval (q ($d y))))
+                noPlayer q = $d ($(noPlayer' neodict) (\y -> eval (q ($d y))))
+                somePlayer q  = $d ($(somePlayer' neodict) (\y -> eval (q ($d y))))
+                everyPlayer q = $d ($(everyPlayer' neodict) (\y -> eval (q ($d y))))
           |]
   return $ ddec : idec
   where t  = conT name

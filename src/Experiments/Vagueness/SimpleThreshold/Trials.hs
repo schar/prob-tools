@@ -1,15 +1,12 @@
-{-# LANGUAGE TemplateHaskell #-}
 
 module Experiments.Vagueness.SimpleThreshold.Trials where
 
 import Experiments.Vagueness.SimpleThreshold.Domain
 import Experiments.Vagueness.SimpleThreshold.Lexica
--- import Lexica.Base
-import Lexica
 import LUM
 import Prob
 import Vocab
-import Experiments
+
 {--}
 
 -- stage the types and priors for LUM over Adj alternatives

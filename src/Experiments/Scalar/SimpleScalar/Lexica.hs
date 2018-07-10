@@ -5,17 +5,15 @@
 
 module Experiments.Scalar.SimpleScalar.Lexica where
 
-import Language.Haskell.TH
-import Language.Haskell.TH.Syntax
--- import LUM
-import Lexica
-import Lexica.ParseTree
 import Vocab
 import Experiments.Scalar.SimpleScalar.Domain
-import Control.Monad (MonadPlus, forM, filterM)
+import Language.Haskell.TH
+import Language.Haskell.TH.Syntax
 import Data.List (intersect, nub, subsequences, (\\))
 
 
+-- Scalar lexica  interpret terms as familiar e/s/t denotations
+------------------------------------------------------------------------------
 type Prop = World -> Bool
 type family TypeOf a where
   TypeOf S  = Prop
@@ -26,16 +24,13 @@ type family TypeOf a where
 class Eval f where
   eval   :: f S -> Prop
 
+-- a message is an unevaluated obj language term of category S
+------------------------------------------------------------------------------
 newtype SAMessage = SAMessage (forall f. (Grammar f, NameLex f, SALex f) => f S)
-instance Eq SAMessage where
-  (SAMessage m) == (SAMessage m') = (m :: ParseTree S) == m'
-instance Ord SAMessage where
-  compare (SAMessage m) (SAMessage m') = compare (m :: ParseTree S) m'
-instance Show SAMessage where
-  show (SAMessage m) = show (m :: ParseTree S)
+mkMessageInstances ''SAMessage 'SAMessage
 
 -- base lexicon
-
+------------------------------------------------------------------------------
 data Base a = B {runBase :: (TypeOf a)}
 
 instance Grammar Base where
@@ -54,24 +49,12 @@ instance SALex Base where
   scored            = B $ \w -> nub [x | y <- shot' w, (x,y) <- hit' w]
   aced              = B $ \w -> nub [x | (x,_) <- hit' w, shot' w == shot' w `intersect` [y | (z,y) <- hit' w, z==x]]
 
-instance GQLex Base where
-  johnQ q           = q john
-  maryQ q           = q mary
-  noPlayer q        = B $ \w -> not (any (\y -> eval (q (B y)) w) (player' w))
-  somePlayer q      = B $ \w -> any (\y -> eval (q (B y)) w) (player' w)
-  everyPlayer q     = B $ \w -> all (\y -> eval (q (B y)) w) (player' w)
-
-instance MannerLex Base where
-  started           = B $ const True
-  gotStarted        = B $ const True
-
 baseSALex :: Lexicon SAMessage World
 baseSALex = Lexicon "Base" (\(SAMessage m) -> runBase m)
 
 -- macros to generate lexicon instances for refinements of Base
 ------------------------------------------------------------------------------
 
--- characteristic sets representing an SA refinement, given a concrete model
 data SADict = SADict
   { scored' :: [(Entity,World)]
   , aced'   :: [(Entity,World)]
@@ -120,13 +103,6 @@ deriveSALex name sadict = do
               instance SALex $t where
                 scored      = $d $ \w -> [x | (x,v) <- scored' sadict, v == w]
                 aced        = $d $ \w -> [x | (x,v) <- aced'   sadict, v == w]
-
-              instance GQLex $t where
-                johnQ       q   = q john
-                maryQ       q   = q mary
-                noPlayer    q   = $d $ \w -> not (any (\y -> eval (q ($d y)) w) (player' w))
-                somePlayer  q   = $d $ \w -> any (\y -> eval (q ($d y)) w) (player' w)
-                everyPlayer q   = $d $ \w -> all (\y -> eval (q ($d y)) w) (player' w)
           |]
   return $ ddec : idec
   where t  = conT name

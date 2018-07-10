@@ -4,12 +4,10 @@ module Experiments.Manner.SimpleCost.Trials where
 
 import Experiments.Manner.SimpleCost.Domain
 import Experiments.Manner.SimpleCost.Lexica
-import Lexica.Base
 import LUM
 import Prob
 import Utils
 import Vocab
-import Experiments
 
 {--}
 
@@ -26,19 +24,19 @@ universe = mannerUniv
 -- specify the alternative utterances
 messages :: [MannerMessage]
 messages =
-  [ MannerMessage (started)
-  , MannerMessage (gotStarted)
+  [ MannerMessage started
+  , MannerMessage gotStarted
   , MannerMessage nil
   ]
 
 -- define the RSA parameters for reasoning about joint distributions over
 -- worlds, messages, and SA lexica
-params :: Dist d => Params d MannerMessage
+params :: Dist d => Params d MannerMessage World
 params = PM
   { worldPrior   = weighted $ zipWith Mass [2, 1] universe
   , messagePrior = uniform messages
   , lexiconPrior = uniform mannerLexes
-  , cost         = \x -> case (lookup x (zip messages [1,2,5])) of {Just c -> c}
+  , cost         = \x -> case lookup x (zip messages [1,2,5]) of {Just c -> c}
   , temp         = 4
   }
 

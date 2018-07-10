@@ -4,11 +4,9 @@ module Experiments.Scalar.SimpleScalar.Trials where
 
 import Experiments.Scalar.SimpleScalar.Domain
 import Experiments.Scalar.SimpleScalar.Lexica
--- import Lexica.Base
 import LUM
 import Prob
 import Vocab
-import Experiments
 
 {--}
 
@@ -32,7 +30,7 @@ messages =
 
 -- define the RSA parameters for reasoning about joint distributions over
 -- worlds, messages, and SA lexica
-params :: Dist d => Params d SAMessage
+params :: Dist d => Params d SAMessage World
 params = PM
   { worldPrior   = uniform universe
   , messagePrior = uniform messages

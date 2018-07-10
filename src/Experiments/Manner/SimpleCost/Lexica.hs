@@ -5,15 +5,14 @@
 
 module Experiments.Manner.SimpleCost.Lexica where
 
-import Language.Haskell.TH
-import Language.Haskell.TH.Syntax
-import Lexica
-import Lexica.ParseTree
 import Vocab
 import Experiments.Manner.SimpleCost.Domain
--- import Data.Tree
--- import Data.Functor.Classes (compare1)
 import Data.List            (subsequences, intercalate, nub, intersect)
+import Language.Haskell.TH
+import Language.Haskell.TH.Syntax
+
+-- The Manner lexicon interprets terms as threshold-dependent e/s/t denotations
+------------------------------------------------------------------------------
 
 type Prop = World -> Bool
 type family TypeOf a where
@@ -27,16 +26,11 @@ class Eval f where
 
 -- a message is an unevaluated obj language term of category S
 ------------------------------------------------------------------------------
-newtype MannerMessage = MannerMessage (forall f. (MannerLex f) => f S)
-instance Eq MannerMessage where
-  (MannerMessage m) == (MannerMessage m') = (m :: ParseTree S) == m'
-instance Ord MannerMessage where
-  compare (MannerMessage m) (MannerMessage m') = compare (m :: ParseTree S) m'
-instance Show MannerMessage where
-  show (MannerMessage m) = show (m :: ParseTree S)
+newtype MannerMessage = MannerMessage (forall f. (Grammar f, MannerLex f) => f S)
+mkMessageInstances ''MannerMessage 'MannerMessage
 
 -- base lexicon
-
+------------------------------------------------------------------------------
 data Base a = B {runBase :: (TypeOf a)}
 
 instance Grammar Base where
@@ -47,30 +41,12 @@ instance Grammar Base where
 instance Eval Base where
   eval              = runBase
 
-instance NameLex Base where
-  john              = B $ John
-  mary              = B $ Mary
-
-instance SALex Base where
-  scored            = B $ \w -> nub [x | y <- shot' w, (x,y) <- hit' w]
-  aced              = B $ \w -> nub [x | (x,_) <- hit' w, shot' w == shot' w `intersect` [y | (z,y) <- hit' w, z==x]]
-
-instance GQLex Base where
-  johnQ q           = q john
-  maryQ q           = q mary
-  noPlayer q        = B $ \w -> not (any (\y -> eval (q (B y)) w) (player' w))
-  somePlayer q      = B $ \w -> any (\y -> eval (q (B y)) w) (player' w)
-  everyPlayer q     = B $ \w -> all (\y -> eval (q (B y)) w) (player' w)
-
 instance MannerLex Base where
   started           = B $ const True
   gotStarted        = B $ const True
 
 baseMannerLex :: Lexicon MannerMessage World
 baseMannerLex = Lexicon "Base" (\(MannerMessage m) -> runBase m)
-
--- The Manner lexicon interprets terms as threshold-dependent e/s/t denotations
-------------------------------------------------------------------------------
 
 data MannerDict = MannerDict
   { started' :: [World]
@@ -105,9 +81,9 @@ deriveMannerLex :: Name -> MannerDict -> Q [Dec]
 deriveMannerLex name mannerdict = do
   ddec <- genData name
   idec <- [d| instance Grammar $t where
-                s $px $pf   = $d $ \w -> x `elem` f w
-                tvp $pf $px = $d $ \w -> [y | (z,y) <- f w, z == x]
-                nil         = $d $ const True
+                 s $px $pf   = $d $ \w -> x `elem` f w
+                 tvp $pf $px = $d $ \w -> [y | (z,y) <- f w, z == x]
+                 nil         = $d $ const True
 
               instance Eval $t where
                 eval ($px)  = x

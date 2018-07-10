@@ -16,21 +16,13 @@ data Entity = John
 type Deg = Double
 
 data World = W
-  { hit'    :: [(Entity, Entity)]
-  , shot'   :: [Entity]
-  , player' :: [Entity]
-  , height' :: [(Entity, Deg)]
-  , weird'  :: Bool
+  { weird'  :: Bool
   }
   deriving (Eq, Lift)
 
 baseWorld :: World
 baseWorld = W
-  { hit' = []
-  , shot' = []
-  , player' = []
-  , height' = []
-  , weird' = False
+  { weird' = False
   }
 
 -- the Manner model

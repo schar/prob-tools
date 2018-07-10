@@ -8,29 +8,18 @@ import Language.Haskell.TH.Syntax (Lift)
 ------------------------------------------------------------------------------
 data Entity = John
             | Mary
-            | ShotA
-            | ShotB
-            | ShotC
             deriving (Eq, Show, Ord, Enum, Bounded, Lift)
 
 type Deg = Double
 
 data World = W
-  { hit'    :: [(Entity, Entity)]
-  , shot'   :: [Entity]
-  , player' :: [Entity]
-  , height' :: [(Entity, Deg)]
-  , weird'  :: Bool
+  { height' :: [(Entity, Deg)]
   }
   deriving (Eq, Lift)
 
 baseWorld :: World
 baseWorld = W
-  { hit' = []
-  , shot' = []
-  , player' = []
-  , height' = []
-  , weird' = False
+  { height' = []
   }
 
 -- the Vagueness model

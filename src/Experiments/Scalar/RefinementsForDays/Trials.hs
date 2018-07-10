@@ -4,11 +4,9 @@ module Experiments.Scalar.RefinementsForDays.Trials where
 
 import Experiments.Scalar.RefinementsForDays.Domain
 import Experiments.Scalar.RefinementsForDays.Lexica
--- import Lexica.Base
 import LUM
 import Prob
 import Vocab
-import Experiments
 
 
 -- TOO MANY LEXICA TO COMPILE! :(

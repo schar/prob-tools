@@ -1,22 +1,19 @@
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE DeriveLift #-}
 
 module Experiments.Scalar.RefinementsForDays.Lexica where
 
+import Vocab
+import Experiments.Scalar.RefinementsForDays.Domain
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
--- import LUM
--- import Lexica (genData)
-import Vocab
--- import Lexica.Base
-import Lexica.ParseTree
-import Lexica
-import Experiments.Scalar.RefinementsForDays.Domain
-import Control.Monad (MonadPlus, forM, filterM)
-import Data.List (subsequences, (\\))
+import Data.List (intersect, nub, subsequences, (\\))
 
 
+-- Scalar lexica  interpret terms as familiar e/s/t denotations
+------------------------------------------------------------------------------
 type Prop = World -> Bool
 type family TypeOf a where
   TypeOf S  = Prop
@@ -27,16 +24,13 @@ type family TypeOf a where
 class Eval f where
   eval   :: f S -> Prop
 
+-- a message is an unevaluated obj language term of category S
+------------------------------------------------------------------------------
 newtype GQMessage = GQMessage (forall f. (Grammar f, NameLex f, SALex f, GQLex f) => f S)
-instance Eq GQMessage where
-  (GQMessage m) == (GQMessage m') = (m :: ParseTree S) == m'
-instance Ord GQMessage where
-  compare (GQMessage m) (GQMessage m') = compare (m :: ParseTree S) m'
-instance Show GQMessage where
-  show (GQMessage m) = show (m :: ParseTree S)
+mkMessageInstances ''GQMessage 'GQMessage
 
 -- base lexicon
-
+------------------------------------------------------------------------------
 data Base a = B {runBase :: (TypeOf a)}
 
 instance Grammar Base where
@@ -62,11 +56,7 @@ instance GQLex Base where
   somePlayer q      = B $ \w -> any (\y -> eval (q (B y)) w) (player' w)
   everyPlayer q     = B $ \w -> all (\y -> eval (q (B y)) w) (player' w)
 
-instance MannerLex Base where
-  started           = B $ const True
-  gotStarted        = B $ const True
-
-baseGQLex :: Lexicon GQMessage
+baseGQLex :: Lexicon GQMessage World
 baseGQLex = Lexicon "Base" (\(GQMessage m) -> runBase m)
 
 -- macros to generate lexicon instances for GQ refinements of Base
@@ -78,9 +68,8 @@ data GQDict = GQDict
   }
   deriving (Eq, Show, Lift)
 
-refineGQBase :: [Entity] -> [World] -> [GQDict]
--- takes about an hour to compile, due to ~64K refinements
 {--}
+refineGQBase :: [Entity] -> [World] -> [GQDict]
 refineGQBase dom univ =
   let pset    = tail . subsequences
                 -- powerset-plus function
@@ -89,6 +78,16 @@ refineGQBase dom univ =
       pEvery  = pset [q | q <- propDom, runBase (everyPlayer (\(B x) -> B $ \_ -> x `elem` q)) (head univ)]
    in [ GQDict {somePlayer' = sm, everyPlayer' = ev} | sm <- pSome, ev <- pEvery ]
 --}
+
+-- declare a lexicon type called `name`
+genData :: Name -> Q Dec
+genData name = dataD (cxt []) name    vars Nothing   fields             derives
+            -- data           LexName a            = LexName (TypeOf a)
+  where a       = mkName "a"
+        vars    = [PlainTV a]
+        b       = bang noSourceUnpackedness noSourceStrictness
+        fields  = [normalC name [bangType b [t| TypeOf $(varT a) |]]]
+        derives = []
 
 -- given a refinement dictionary, declare the evaluation algebras that define
 -- the `name` lexicon
