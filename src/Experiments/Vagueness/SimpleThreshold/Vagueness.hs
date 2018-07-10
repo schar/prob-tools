@@ -2,7 +2,7 @@
 
 module Experiments.Vagueness where
 
-import Lexica.AdjEQ
+import Lexica.AdjGT
 import Lexica.Base
 import Lexica
 import LUM
@@ -15,13 +15,13 @@ import Experiments
 -- stage the types and priors for LUM over Adj alternatives
 ------------------------------------------------------------------------------
 
-baselex = baseAdjEQLex
+baselex = baseAdjGTLex
 universe = adjUniv
 
 -- define the SA lexica that compete with Base
 adjLexes :: [Lexicon AdjMessage]
 adjLexes =
-  [ Lexicon ("AdjLex" ++ show d) (\(AdjMessage m) w -> runAdjEQ m d w) | d <- heights ]
+  [ Lexicon ("AdjLex" ++ show d) (\(AdjMessage m) w -> runAdjGT m d w) | d <- heights ]
 
 -- specify the alternative utterances
 messages :: [AdjMessage]
@@ -38,7 +38,7 @@ params = PM
   { worldPrior   = normalize 0.5 0.15 (zip universe heights)
   , messagePrior = uniform messages
   , lexiconPrior = uniform adjLexes
-  , cost         = \x -> case (lookup x (zip messages [1,2,5])) of {Just c -> c}
+  , cost         = \x -> if x == AdjMessage nil then 0 else 2
   , temp         = 5
   }
 
@@ -61,16 +61,6 @@ main = do
   putStrLn "L1"
   putStrLn "----------"
   dispL1 params messages
-
-  putStrLn ""
-  putStrLn "S2"
-  putStrLn "----------"
-  dispSN 2 params universe
-
-  putStrLn ""
-  putStrLn "L2"
-  putStrLn "----------"
-  dispLN 2 params messages
 
 -- > L0
 -- > ----------
