@@ -30,14 +30,14 @@ messages =
   ]
 
 -- define the RSA parameters for reasoning about joint distributions over
--- worlds, messages, and SA lexica
+-- worlds, messages, and lexica
 params :: Dist d => Params d MannerMessage World
 params = PM
   { worldPrior   = weighted $ zipWith Mass [2, 1] universe
   , messagePrior = uniform messages
   , lexiconPrior = uniform mannerLexes
   , cost         = \x -> case lookup x (zip messages [1,2,5]) of {Just c -> c}
-  , temp         = 4
+  , temp         = 5
   }
 
 

@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b329cedc6fe81070329b10907436d9e5cf49bab1cd1e5632d89da15ccdaaf34f
+-- hash: f7808062a90e7b1ba4acfae99de8f459610ca8a2270fee1756140e2ec00afae8
 
 name:           prob-tools
 version:        0.1.0.0
@@ -25,21 +25,24 @@ library
     , transformers
   exposed-modules:
       Experiments
-      Experiments.Manner
-      Experiments.NeoScalar
-      Experiments.RefinementsForDays
-      Experiments.SimpleScalar
-      Experiments.Vagueness
+      Experiments.Manner.SimpleCost.Domain
+      Experiments.Manner.SimpleCost.Lexica
+      Experiments.Manner.SimpleCost.Trials
+      Experiments.Scalar.NeoScalar.Domain
+      Experiments.Scalar.NeoScalar.Lexica
+      Experiments.Scalar.NeoScalar.Trials
+      Experiments.Scalar.RefinementsForDays.Domain
+      Experiments.Scalar.RefinementsForDays.Lexica
+      Experiments.Scalar.RefinementsForDays.Trials
+      Experiments.Scalar.SimpleScalar.Domain
+      Experiments.Scalar.SimpleScalar.Lexica
+      Experiments.Scalar.SimpleScalar.Trials
+      Experiments.Vagueness.CostDriven.Domain
+      Experiments.Vagueness.CostDriven.Lexica
+      Experiments.Vagueness.SimpleThreshold.Domain
+      Experiments.Vagueness.SimpleThreshold.Lexica
+      Experiments.Vagueness.SimpleThreshold.Trials
       Lexica
-      Lexica.AdjEQ
-      Lexica.AdjGT
-      Lexica.Base
-      Lexica.GQ
-      Lexica.Manner
-      Lexica.Neo
-      Lexica.ParseTree
-      Lexica.Refinements
-      Lexica.SA
       LUM
       Model
       Prob
