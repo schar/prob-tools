@@ -34,12 +34,19 @@ instance SALex Base where
 instance GQLex Base where
   johnQ q           = q john
   maryQ q           = q mary
-  noPlayer q      = B $ \w -> not (any (\y -> eval (q (B y)) w) (player' w))
+  noPlayer q        = B $ \w -> not (any (\y -> eval (q (B y)) w) (player' w))
   somePlayer q      = B $ \w -> any (\y -> eval (q (B y)) w) (player' w)
   everyPlayer q     = B $ \w -> all (\y -> eval (q (B y)) w) (player' w)
+
+instance MannerLex Base where
+  started           = B $ const True
+  gotStarted        = B $ const True
 
 baseGQLex :: Lexicon GQMessage
 baseGQLex = Lexicon "Base" (\(GQMessage m) -> runBase m)
 
 baseSALex :: Lexicon SAMessage
 baseSALex = Lexicon "Base" (\(SAMessage m) -> runBase m)
+
+baseMannerLex :: Lexicon MannerMessage
+baseMannerLex = Lexicon "Base" (\(MannerMessage m) -> runBase m)

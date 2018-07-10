@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e0d50fef6ffdcf4459a2c92c37a011ee2b40850dbe4f8eca3cbf728c324ffec8
+-- hash: b329cedc6fe81070329b10907436d9e5cf49bab1cd1e5632d89da15ccdaaf34f
 
 name:           prob-tools
 version:        0.1.0.0
@@ -24,10 +24,18 @@ library
     , template-haskell
     , transformers
   exposed-modules:
+      Experiments
+      Experiments.Manner
+      Experiments.NeoScalar
+      Experiments.RefinementsForDays
+      Experiments.SimpleScalar
+      Experiments.Vagueness
       Lexica
-      Lexica.Adj
+      Lexica.AdjEQ
+      Lexica.AdjGT
       Lexica.Base
       Lexica.GQ
+      Lexica.Manner
       Lexica.Neo
       Lexica.ParseTree
       Lexica.Refinements

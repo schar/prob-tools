@@ -43,28 +43,54 @@ groupEqBy f (a:rest) = (a:as) : groupEqBy f bs
   where (as,bs) = partition (f a) rest
 
 
+listener :: Eq m => Int -> m -> Lexicon m -> Params BDDist m -> BDDist World
+listener 0 m lex model = bayes $
+  do w <- worldPrior model
+     guard (interpret lex m w)
+     return w
+listener 1 m _ model = bayes $
+  do w <- worldPrior model
+     lex' <- (lexiconPrior model)
+     m' <- speaker 1 w lex' model
+     guard (m' == m)
+     return w
+listener n m lex model = bayes $
+  do w <- worldPrior model
+     m' <- speaker n w lex model
+     guard (m' == m)
+     return w
+
+speaker :: Eq m => Int -> World -> Lexicon m -> Params BDDist m -> BDDist m
+speaker n w lex model = bayes $
+  do m <- messagePrior model
+     w' <- scale m model (listener (n-1) m lex model)
+     guard (w' == w)
+     return m
+
+{--
+
 -- literal listener
 ------------------------------------------------------------------------------
 -- given a message `m` and lexicon `lex`, return a distribution over worlds `w`
 -- that could be described by `m` when interpreted by `lex`, weighted by world
 -- prior
 l0 :: Eq m => m -> Lexicon m -> Params BDDist m -> BDDist World
-l0 m lex model = bayes $ do
-  w <- worldPrior model
-  guard (interpret lex m w)
-  return w
+l0 m lex model = bayes $
+  do w <- worldPrior model
+     guard (interpret lex m w)
+     return w
 
 -- literal speaker
 ------------------------------------------------------------------------------
 -- given a world `w` and lexicon `lex`, return a distribution over messages `m`
 -- that are true of `w` when interpreted by `lex`, weighted by message prior and
 -- cost
-s0 :: Eq m => World -> Lexicon m -> Params BDDist m -> BDDist m
-s0 w lex model = bayes $ do
-  m <- messagePrior model
-  w' <- scale m model (l0 m lex model)
-  guard (w' == w)
-  return m
+s1 :: Eq m => World -> Lexicon m -> Params BDDist m -> BDDist m
+s1 w lex model = bayes $
+  do m <- messagePrior model
+     w' <- scale m model (l0 m lex model)
+     guard (w' == w)
+     return m
 
 -- pragmatic listener
 ------------------------------------------------------------------------------
@@ -72,9 +98,11 @@ s0 w lex model = bayes $ do
 -- `m` under /some/ lexicon, weighted by world prior, lexicon prior,
 -- and likelihood of s0 to describe `w` with `m`
 l1 :: (Eq m) => m -> Params BDDist m -> BDDist World
-l1 m model = bayes $ do
-  w <- worldPrior model
-  sem <- (lexiconPrior model)
-  m' <- s0 w sem model
-  guard (m' == m)
-  return w
+l1 m model = bayes $
+  do w <- worldPrior model
+     sem <- (lexiconPrior model)
+     m' <- s1 w sem model
+     guard (m' == m)
+     return w
+
+--}

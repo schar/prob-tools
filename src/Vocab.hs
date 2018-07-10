@@ -38,6 +38,9 @@ class Grammar f where
 class Eval f where
   eval   :: f S -> Prop
 
+class DegEval f where
+  degEval :: f S -> Deg -> Prop
+
 class (Grammar f) => NameLex f where
   john   :: f NP
   mary   :: f NP
@@ -56,6 +59,10 @@ class (SALex f) => GQLex f where
 class (NameLex f) => AdjLex f where
   tall :: f VP
   short :: f VP
+
+class (Grammar f, Eval f) => MannerLex f where
+  started :: f S
+  gotStarted :: f S
 
 -- a message is an unevaluated obj language term of category S
 ------------------------------------------------------------------------------
@@ -82,6 +89,14 @@ instance Ord AdjMessage where
   compare (AdjMessage m) (AdjMessage m') = compare (m :: ParseTree S) m'
 instance Show AdjMessage where
   show (AdjMessage m) = show (m :: ParseTree S)
+
+newtype MannerMessage = MannerMessage (forall f. (Eval f, MannerLex f) => f S)
+instance Eq MannerMessage where
+  (MannerMessage m) == (MannerMessage m') = (m :: ParseTree S) == m'
+instance Ord MannerMessage where
+  compare (MannerMessage m) (MannerMessage m') = compare (m :: ParseTree S) m'
+instance Show MannerMessage where
+  show (MannerMessage m) = show (m :: ParseTree S)
 
 -- The ParseTree lexicon interprets terms as trees of strings
 ------------------------------------------------------------------------------
@@ -119,3 +134,7 @@ instance GQLex ParseTree where
 instance AdjLex ParseTree where
   tall             = PT $ pure "is tall"
   short            = PT $ pure "is short"
+
+instance MannerLex ParseTree where
+  started          = PT $ pure "started"
+  gotStarted       = PT $ pure "got started"

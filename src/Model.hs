@@ -20,6 +20,7 @@ data World = W
   , shot'   :: [Entity]
   , player' :: [Entity]
   , height' :: [(Entity, Deg)]
+  , weird'  :: Bool
   }
   deriving (Eq, Lift)
 
@@ -29,6 +30,7 @@ baseWorld = W
   , shot' = []
   , player' = []
   , height' = []
+  , weird' = False
   }
 
 -- the SA model
@@ -56,7 +58,7 @@ wNN, wNS, wNA, wSN, wSS, wSA, wAN, wAS, wAA :: World
   , baseWorld {hit' = [(John,ShotA), (John,ShotB), (Mary,ShotA), (Mary,ShotB)], shot' = [ShotA,ShotB], player' = [John,Mary]}
   ]
 
--- the Adj model
+-- the Vagueness model
 ------------------------------------------------------------------------------
 heights :: [Deg]
 heights = [n / 10.0 | n <- [0..10]]
@@ -64,6 +66,12 @@ heights = [n / 10.0 | n <- [0..10]]
 w0, w1, w2, w3, w4, w5, w6, w7, w8, w9, w10 :: World
 [w0, w1, w2, w3, w4, w5, w6, w7, w8, w9, w10] =
   [ baseWorld {height' = [(John, d), (Mary, d)]} | d <- heights]
+
+-- the Manner model
+------------------------------------------------------------------------------
+
+wNormal, wWeird :: World
+[wNormal, wWeird] = [baseWorld {weird' = False}, baseWorld {weird' = True}]
 
 instance Show World where
   show w | w == wA   = "wA"
@@ -89,13 +97,16 @@ instance Show World where
          | w == w8   = "w8"
          | w == w9   = "w9"
          | w == w10  = "w10"
+         | w == wNormal  = "wNormal"
+         | w == wWeird  = "wWeird"
 
 saDom, gqDom :: [Entity]
 saDom = [John,ShotA,ShotB]
 gqDom = [John, Mary, ShotA, ShotB]
 adjDom = [John, Mary]
 
-saUniv, gqUniv, adjUniv :: [World]
+saUniv, gqUniv, adjUniv, mannerUniv :: [World]
 saUniv = [wA, wS, wN]
 gqUniv = [wNN, wNS, wNA, wSN, wSS, wSA, wAN, wAS, wAA]
 adjUniv = [w0, w1, w2, w3, w4, w5, w6, w7, w8, w9, w10]
+mannerUniv = [wNormal, wWeird]
