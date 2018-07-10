@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f7808062a90e7b1ba4acfae99de8f459610ca8a2270fee1756140e2ec00afae8
+-- hash: 6b98f0b1676d237751b93582bac2e611cf6b4786179b53708902f9124a7cf3d6
 
 name:           prob-tools
 version:        0.1.0.0
@@ -24,7 +24,6 @@ library
     , template-haskell
     , transformers
   exposed-modules:
-      Experiments
       Experiments.Manner.SimpleCost.Domain
       Experiments.Manner.SimpleCost.Lexica
       Experiments.Manner.SimpleCost.Trials
@@ -39,12 +38,11 @@ library
       Experiments.Scalar.SimpleScalar.Trials
       Experiments.Vagueness.CostDriven.Domain
       Experiments.Vagueness.CostDriven.Lexica
+      Experiments.Vagueness.CostDriven.Trials
       Experiments.Vagueness.SimpleThreshold.Domain
       Experiments.Vagueness.SimpleThreshold.Lexica
       Experiments.Vagueness.SimpleThreshold.Trials
-      Lexica
       LUM
-      Model
       Prob
       Utils
       Vocab

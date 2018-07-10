@@ -5,9 +5,7 @@ import Control.Monad             (guard)
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT, runMaybeT))
 import Data.Function             (on)
 import Data.List                 (partition)
-import Lexica
 import Vocab
--- import Model
 import Prob
 import Utils
 
