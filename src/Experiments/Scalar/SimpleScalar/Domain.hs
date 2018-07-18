@@ -19,8 +19,7 @@ data World = W
   { hit'    :: [(Entity, Entity)]
   , shot'   :: [Entity]
   , player' :: [Entity]
-  , height' :: [(Entity, Deg)]
-  , weird'  :: Bool
+  , worldName :: String
   }
   deriving (Eq, Lift)
 
@@ -29,24 +28,23 @@ baseWorld = W
   { hit' = []
   , shot' = []
   , player' = []
-  , height' = []
-  , weird' = False
+  , worldName = ""
   }
 
 -- the SA model
 ------------------------------------------------------------------------------
 wN, wS, wA :: World
 [wN, wS, wA] =
-  [ baseWorld {hit' = [                          ], shot' = [ShotA,ShotB], player' = [John]}
-  , baseWorld {hit' = [(John,ShotA)              ], shot' = [ShotA,ShotB], player' = [John]}
+  [ baseWorld {hit' = [                          ], shot' = [ShotA,ShotB], player' = [John], worldName = "wN"}
+  , baseWorld {hit' = [(John,ShotA)              ], shot' = [ShotA,ShotB], player' = [John], worldName = "wS"}
 --, baseWorld {hit' = [              (John,ShotB)], shot' = [ShotA,ShotB], player' = [John]}
-  , baseWorld {hit' = [(John,ShotA), (John,ShotB)], shot' = [ShotA,ShotB], player' = [John]}
+  , baseWorld {hit' = [(John,ShotA), (John,ShotB)], shot' = [ShotA,ShotB], player' = [John], worldName = "wA"}
   ]
 
 instance Show World where
-  show w | w == wA   = "wA"
-         | w == wS   = "wS"
-         | w == wN   = "wN"
+  show = worldName
+instance Ord World where
+  compare w w' = compare (worldName w) (worldName w')
 
 saDom :: [Entity]
 saDom = [John,ShotA,ShotB]

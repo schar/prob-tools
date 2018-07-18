@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6b98f0b1676d237751b93582bac2e611cf6b4786179b53708902f9124a7cf3d6
+-- hash: e9047328a2015cc69d685f7d66a248608c06b6f7522614cf8aa4f8a49dfd0593
 
 name:           prob-tools
 version:        0.1.0.0
@@ -19,7 +19,8 @@ library
   build-depends:
       base >=4.7 && <5
     , containers
-    , mwc-random
+    , monad-memo
+    , random
     , semiring-simple
     , template-haskell
     , transformers
@@ -35,10 +36,14 @@ library
       Experiments.Scalar.RefinementsForDays.Trials
       Experiments.Scalar.SimpleScalar.Domain
       Experiments.Scalar.SimpleScalar.Lexica
+      Experiments.Scalar.SimpleScalar.LUM
       Experiments.Scalar.SimpleScalar.Trials
       Experiments.Vagueness.CostDriven.Domain
       Experiments.Vagueness.CostDriven.Lexica
       Experiments.Vagueness.CostDriven.Trials
+      Experiments.Vagueness.MultiThreshold.Domain
+      Experiments.Vagueness.MultiThreshold.Lexica
+      Experiments.Vagueness.MultiThreshold.Trials
       Experiments.Vagueness.SimpleThreshold.Domain
       Experiments.Vagueness.SimpleThreshold.Lexica
       Experiments.Vagueness.SimpleThreshold.Trials
@@ -58,8 +63,9 @@ executable prob-tools-exe
   build-depends:
       base >=4.7 && <5
     , containers
-    , mwc-random
+    , monad-memo
     , prob-tools
+    , random
     , semiring-simple
     , template-haskell
     , transformers

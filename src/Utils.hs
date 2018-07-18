@@ -18,7 +18,7 @@ import           Numeric                   (showFFloat)
 type Prob = Sum Double
 
 data Mass w a = Mass { getFstMass :: w, getSndMass :: a }
-  deriving (Functor)
+  deriving (Functor, Eq)
 
 instance (Show a) => Show (Mass Prob a) where
   show (Mass (Sum p) a) = show a ++ ": " ++ showFFloat (Just 2) p ""
@@ -33,7 +33,7 @@ instance Semiring w => Applicative (Mass w) where
   (<*>) = ap
 
 newtype MassT w m a = MassT { runMassT ::  m (Mass w a) }
-  deriving Functor
+  deriving (Functor)
 
 instance (Semiring w, Monad m) => Monad (MassT w m) where
   return   = MassT . return . return

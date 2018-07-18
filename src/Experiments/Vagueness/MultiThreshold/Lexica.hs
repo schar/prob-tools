@@ -2,10 +2,10 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Experiments.Vagueness.CostDriven.Lexica where
+module Experiments.Vagueness.MultiThreshold.Lexica where
 
 import Vocab
-import Experiments.Vagueness.CostDriven.Domain
+import Experiments.Vagueness.MultiThreshold.Domain
 
 -- The AdjEQ lexicon interprets terms as threshold-vector-dependent e/s/t denotations
 ------------------------------------------------------------------------------
@@ -41,8 +41,8 @@ instance NameLex AdjEQ where
   mary                = AdjEQ $ const Mary
 
 instance AdjLex AdjEQ where
-  tall  = AdjEQ $ \ds w -> [x' | (x',d') <- height' w, d' >= 0]
-  short = AdjEQ $ \ds w -> [x' | (x',d') <- height' w, d' >= 0]
+  tall  = AdjEQ $ \ds w -> [x' | (x',d') <- height' w, d' >= fst ds]
+  short = AdjEQ $ \ds w -> [x' | (x',d') <- height' w, d' <= snd ds]
 
 baseAdjEQLex :: Lexicon AdjMessage World
 baseAdjEQLex = Lexicon "baseAdjEQLex" (\(AdjMessage m) -> runAdjEQ m (0.5, 0.5))

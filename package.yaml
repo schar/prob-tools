@@ -19,11 +19,14 @@ dependencies:
 - base >= 4.7 && < 5
 - transformers
 - semiring-simple
-# - random 
+- random 
 - containers
 # - unordered-containers
 - template-haskell
-- mwc-random
+# - mwc-random
+# - io-memoize
+# - MemoTrie
+# - monad-memo
 
 library:
   source-dirs:

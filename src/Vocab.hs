@@ -1,4 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE DeriveGeneric #-}
+
 
 module Vocab where
 
@@ -6,6 +8,8 @@ import Data.Tree
 import Data.Functor.Classes (compare1)
 import Data.List            (intercalate, nub, intersect)
 import Language.Haskell.TH
+import GHC.Generics (Generic)
+
 
 -- categories for the object language algebra
 data NP

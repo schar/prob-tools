@@ -1,12 +1,15 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Experiments.Scalar.SimpleScalar.Trials where
 
 import Experiments.Scalar.SimpleScalar.Domain
 import Experiments.Scalar.SimpleScalar.Lexica
-import LUM
+import Experiments.Scalar.SimpleScalar.LUM
 import Prob
 import Vocab
+import Utils
+import Control.Monad
 
 {--}
 
@@ -30,7 +33,7 @@ messages =
 
 -- define the RSA parameters for reasoning about joint distributions over
 -- worlds, messages, and SA lexica
-params :: Dist d => Params d SAMessage World
+params :: Params (MemoBMC SAMessage (Lexicon SAMessage World) World) SAMessage World
 params = PM
   { worldPrior   = uniform universe
   , messagePrior = uniform messages
@@ -64,7 +67,7 @@ main = do
 -- > P(.|John aced, Base): wA = 1.00
 -- > P(.|----, Base): wA = 0.33, wS = 0.33, wN = 0.33
 
--- > S0
+-- > S1
 -- > ----------
 -- > P(.|wA, Base): John scored = 0.33, John aced = 0.67, ---- = 0.00
 -- > P(.|wS, Base): John scored = 1.00, ---- = 0.00
@@ -77,3 +80,23 @@ main = do
 -- > P(.|----): wA = 0.00, wS = 0.25, wN = 0.75
 
 --}
+
+-- for playing with the same parameters under different dist encodings
+------------------------------------------------------------------------------
+paramsBDDist :: Params BDDist SAMessage World
+paramsBDDist = PM
+  { worldPrior   = uniform universe
+  , messagePrior = uniform messages
+  , lexiconPrior = uniform saLexes
+  , cost         = \x -> if x == SAMessage nil then 5 else 0
+  , temp         = 1
+  }
+
+paramsBMC :: Params BMC SAMessage World
+paramsBMC = PM
+  { worldPrior   = uniform universe
+  , messagePrior = uniform messages
+  , lexiconPrior = uniform saLexes
+  , cost         = \x -> if x == SAMessage nil then 5 else 0
+  , temp         = 1
+  }

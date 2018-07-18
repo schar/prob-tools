@@ -29,6 +29,7 @@ class Eval f where
 newtype SAMessage = SAMessage (forall f. (Grammar f, NameLex f, SALex f) => f S)
 mkMessageInstances ''SAMessage 'SAMessage
 
+
 -- base lexicon
 ------------------------------------------------------------------------------
 data Base a = B {runBase :: (TypeOf a)}
